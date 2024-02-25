@@ -1,0 +1,147 @@
+// Die CSS-Datei zur showstopper.html
+
+/* grid layout, 3 columns */
+.container {
+    height: 100vh;
+    display: grid;
+    grid-template-rows: 1fr;
+    grid-template-columns: 100%;
+}
+
+@media screen and (min-width: 44.001em) {
+    .container {
+        grid-template-rows: 80px 4fr 1fr 40px;
+        grid-template-columns: 25% 50% 25%;
+    }
+}
+
+
+.wrapper {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    /* 1 fraction */
+    grid-gap: 12px;
+}
+
+
+
+.box {
+    margin-bottom: 10px;
+}
+
+.alternativesBox {
+    grid-column: auto / span 1;
+    grid-row: 1 / span 1;
+    background-color: #f2fff2;
+    border-radius: 10px;
+    padding: 10px;
+}
+
+.signBox {
+    grid-column: auto / span 1;
+    grid-row: 1 / span 1;
+    max-width: 450px;
+    justify-self: center;
+}
+
+.infoBox {
+    grid-column: auto / span 1;
+    grid-row: 1 / span 1;
+}
+
+.infoBoxSegment {
+    background-color: #eeeeee;
+    border-radius: 10px;
+    padding: 10px;
+    margin-bottom: 10px;
+}
+
+#domainSolo2 {
+    text-align: center;
+    font-size: 2em;
+}
+
+.setupcontainer {
+    width: 100%;
+    /* Width of the outside container */
+}
+
+.blocksinline {
+    display: flex;
+    justify-content: space-around;
+}
+
+.block {
+    justify-self: center;
+}
+
+/* The slider itself */
+.slider {
+    width: 100%;
+    /* Full-width */
+    height: 15px;
+    /* Specified height */
+}
+
+.alternative {
+    border-radius: 10px;
+    padding: 10px;
+    margin-bottom: 10px;
+    background-color: #aaaacb;
+    text-align: center;
+    text-decoration: none;
+    font-size: 2em;
+    font-weight: 600;
+    position: relative;
+}
+
+.alternativeClaim {
+    font-size: 0.5em;
+    font-weight: 100;
+    margin: 3px 0px 3px 0px;
+}
+
+.alternativeClaimEdit {
+    font-size: 0.5em;
+    font-weight: 100;
+    background-color: var(--enter-color);
+    padding: 0 0px;
+}
+
+.alternativeClaimInput {
+    width: 100%;
+    background-color: var(--enter-color);
+    text-align: center;
+}
+
+a:link {
+    color: black;
+    text-decoration: none;
+}
+
+.alternativeRemove {
+    position: absolute;
+    top: 0;
+    right: 0;
+    text-align: center;  
+    font-size: 0.7em;
+}
+
+.colorPicker {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background-color: black;
+    border-width: 3px;
+    border-color: white;
+    font-size: 1em;
+    opacity: 0.1;
+}
+
+.icon {
+    width: 1em;
+    height: 1em;
+}

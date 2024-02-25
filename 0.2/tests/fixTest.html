@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Document</title>
+</head>
+<body>
+    <div class="fit-this-text">
+       <div class='fitter'>
+        <h1>Resize your window</h1>
+        <h2>Play with responsive 💡</h2>
+        <p>A Vor den U-Ausschuss trat am Mittwoch als Erster die "blaue Glücksfee" Peter Sidlo (FPÖ) und hat dabei zunächst seine Eignung für den Posten im Vorstand der Casinos verteidigt. Er wurde im März 2019 zum Vorstand für Finanzen der Casinos Austria AG (Casag) bestellt, auf Vorschlag des damaligen Miteigentümers Novomatic. Zu dem Gutachten, das ihn als nicht für den Job qualifiziert darstellt, sagte Sidlo vor dem Ausschuss, dass er es aus dem Akt kenne – damals habe er es nicht gekannt. Seine spätere Absetzung – wegen Vertrauensverlusts – sei ungerechtfertigt gewesen, "und das habe ich auch eingeklagt". Ihm sei kein Fehlverhalten bewusst. Die Causa liegt beim Handelsgericht Wien, aber die Abteilung hat gerade keinen Richter.
+
+Zu seiner FPÖ-Nähe sagte er: "Ja, es stimmt, ich war für eine österreichische Partei in der Vergangenheit ehrenamtlich tätig." Fügte jedoch hinzu: "Ich war aber nie Berufspolitiker, sondern habe mein ganzes Berufsleben in der Finanzwelt verbracht." Heinz-Christian Strache, ehemaliger FPÖ-Vizekanzler, habe Sidlos Bewerbung unterstützt – aufgrund seiner Qualifikation, nicht aufgrund des Parteibuchs.
+</p>
+       </div>
+    </div>
+</body>
+<script src='fitext-1.4.4/dist/fitext.esm.js' defer></script>
+<script>
+    const EVENTS = ['DOMContentLoaded', 'resize']
+    EVENTS.forEach( e => window.addEventListener( e, () => fitext(true, .25) ) )
+</script>
+</html>

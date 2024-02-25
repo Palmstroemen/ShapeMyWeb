@@ -1,0 +1,99 @@
+// Die CSS-Datei zur showstopper.html
+
+/* grid layout, 3 columns */
+.container {
+    height: 100vh;
+    display: grid;
+    grid-template-rows: 1fr;
+    grid-template-columns: 100%;
+}
+
+@media screen and (min-width: 44.001em) {
+    .container {
+        grid-template-rows: 80px 4fr 1fr 40px;
+        grid-template-columns: 25% 50% 25%;
+    }
+}
+
+
+.wrapper {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    /* 1 fraction */
+    grid-gap: 12px;
+}
+
+
+
+.box {
+    margin-bottom: 10px;
+}
+
+.alternativesBox {
+    grid-column: auto / span 1;
+    grid-row: 1 / span 1;
+    background-color: #eeffcc;
+    border-radius: 10px;
+    padding: 10px;
+}
+
+.signBox {
+    grid-column: auto / span 1;
+    grid-row: 1 / span 1;
+    max-width: 450px;
+    justify-self: center;
+}
+
+.infoBox {
+    grid-column: auto / span 1;
+    grid-row: 1 / span 1;
+}
+
+.infoBoxSegment {
+    background-color: #eeeeee;
+    border-radius: 10px;
+    padding: 10px;
+    margin-bottom: 10px;
+}
+
+.forbiddenDomain {
+    margin: 10px;
+    text-align: center;
+    font-size: 2em;
+
+}
+
+.slidecontainer {
+    width: 100%;
+    /* Width of the outside container */
+}
+
+/* The slider itself */
+.slider {
+    width: 100%;
+    /* Full-width */
+    height: 15px;
+    /* Specified height */
+}
+
+.alternative {
+    border-radius: 10px;
+    padding: 10px;
+    margin-bottom: 10px;
+    background-color: #aaaacb;
+    text-align: center;
+    text-decoration: none;
+    font-size: 4em;
+    font-weight: 500;
+    position: relative;
+}
+
+.alternativeRemove {
+    position: absolute;
+    top: 0;
+    right: 0;
+    text-align: center;
+    
+    
+    
+}

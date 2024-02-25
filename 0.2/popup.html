@@ -1,0 +1,144 @@
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>ShapeMyWeb</title>
+    <meta name="description" content="Das Menü, das beim Click auf das Icon erscheint.">
+
+    <link href="smw-style.css" type="text/css" rel="stylesheet">
+    <link href="popup.css" type="text/css" rel="stylesheet">
+    <script src="./libraries/jquery.min.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <script src="toolbar.js"></script>
+    <script src="./libraries/globalFunctions.js"></script>
+    <script src="showDomainInfos.js"></script>
+    <script src="./libraries/localize.js"></script>
+    <script src="./libraries/communication.js"></script>
+    <!-- die nachfolgende Zeile bindet jquery vom Google-Server ein. 
+             die aktuellste Version findet man auf: 
+             https://developers.google.com/speed/libraries?hl=de#jquery
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+        
+        Und falls dieser Download nicht funktioniert gibt's jetzt dann einen
+        Fallback auf eine selbst gehostete Version.
+        <script>
+        window.jQuery || document.write('<script src="http://mysite.com/jquery.min.js"><\/script>'))
+        </script>
+        
+        Und so ladet man es aus dem eigenen Ordner während der Entwicklung, wenn man will.
+        <script type="text/javascript" src="libraries/jquery.min.js"></script>
+        
+         -->
+</head>
+
+<body style="margin: 0">
+
+    <div style="width:245px">
+        <header style="border-bottom: 1px solid lightgrey">
+            
+        </header>
+        <nav>
+            <div id="toolbar" style="z-index: 1"></div>
+            <input id="buttonSetup" class="buttonRole" type="image" src="images/Setup-32.png" alt="setup-button">
+        </nav>
+        <div id="infoline" class="info" style='margin: 10px'>
+            <p><i lang="L001">Short Info</i></p>
+        </div>
+
+        <div id="pauseinfo" class="info">
+            <p><i lang="L002">Paused Info</i></p>
+        </div>
+        <main>
+            <div id="domainInfo" style="margin: 10px; display: none">
+                <div id="avoidArea" style="display: none">
+                    <p id="infoDom" style="display: none">
+                        <span lang='L030'>You do not want to use</span>
+                        <span id="domainSolo" style="font-weight: bold">domain.com</span>
+                        <span lang="L034">anymore.</span>?
+                    </p>
+                    <p id="infoSub" style="display: none">
+                        <span lang='L031'>From the website</span>
+                        <span id="domainSub" style="font-weight: bold">domain.com</span>
+                        <span lang='L032'>you do not want to use the service</span>
+                        <span id="avoidedSub" style="font-weight: bold">service</span>
+                        <span lang="L034">anymore.</span>
+                    </p>
+                    <p id="infoSubs" style="display: none">
+                        <span lang='L031'>From the website</span>
+                        <span id="domainSubs" style="font-weight: bold">domain.com</span>
+                        <span lang='L033'>you do not want to use the services</span>
+                        <span id="avoidedSubs" style="font-weight: bold">services</span>
+                        <span lang="L034">anymore.</span>
+                    </p>
+
+                    <i>
+                        <p lang="L003">Click here ...</p>
+                    </i>
+                    <input id="buttonAvoid" type="image" src="images/icon-128.png" alt="Button Avoid this site" style="align-self: stretch">
+                    <i>
+                        <p style="text-align: right" lang="L004">... to avoid this site.</p>
+                    </i>
+                </div>
+                <div id="unavoidArea" style="margin:10px; display: none">
+                    <p><i lang="L005">You already avoid </i>
+                        <span id="domainSolo2" style="font-weight: bold">domain.com</span></p>
+                    <p style="text-align: center"><i><strong><span id="reminder">reason</span></strong></i></p>
+                    <table>
+                        <tr>
+                            <td>
+                                <input id="buttonUnAvoid" type="image" src="../images/cross-over-32.png" alt="Delete button">
+                            </td>
+                            <td style="padding-left: 10px">
+                                <span lang="L022">unavoid</span>
+                            </td>
+                        </tr>
+                    </table>
+                    <p><i lang="L006">Unavoid Info</i></p>
+
+                    <p class="info"><i lang="L007">Pause Info</i></p>
+                    <!--            
+                    <button id="buttonWhitelist" alt="Button to temporarily release this site">maybe reavoid this website later again</button>
+        -->
+                </div>
+            </div>
+            <div style="margin: 10px">
+                <div id="advancedOn" style="display: none">
+                    <div id="subdomainSection" style="display: none">
+                        <div class='info'>
+                            <strong lang='L040'>Info Header</strong><br>
+                            <i lang='L041'>Info</i>
+                        </div>
+                        <div style="margin-top: 10px; margin-bottom: 10px">
+                            <span id='addSubA1' lang='L035' style="display: none">You can also block just</span>
+                            <span id='addSubA2' lang='L036' style="display: none">You can also additionally block</span>
+                            <span id='addSubB1' lang='L037' style="display: none">the service</span>
+                            <span id='addSubB2' lang='L038' style="display: none">one of the services</span>
+                            <div id="buttonSubdom">subdomain</div>
+                            <span lang='L039'>from this website.</span>
+                        </div>
+                        <div lang='L010'>
+                            Or
+                        </div>
+                        <button id='blockWholeSite' lang='L011'>block the whole website</button>
+                        <p style="text-align: center">
+                            <button id="advancedBack"><strong lang='L009'>Back</strong></button>
+                        </p>
+
+                    </div>
+                </div>
+                <div id="advancedOff" style="display: none; text-align: center">
+                    <button id="advanced"><strong lang='L008'>Advanced</strong></button>
+                </div>
+            </div>
+        </main>
+        <footer id="advancedNo" style="display: block; text-align: center" lang='L012'>contact</footer>
+    </div>
+
+    <script type="text/javascript" src="popup.js"></script>
+
+    <!-- Binde alle kompilierten Plugins zusammen ein (wie hier unten) oder such dir einzelne Dateien nach Bedarf aus -->
+</body>
+
+</html>

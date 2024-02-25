@@ -1,0 +1,41 @@
+{
+    "manifest_version": 2,
+    "name": "__MSG_extName__",
+    "version": "0.2",
+    "default_locale": "en",
+    "omnibox": { "keyword" : "avoid"},
+
+    "description": "Web Filter enables self-determined web filtering.",
+    "icons": {
+        "128": "images/icon-128.png",
+        "16": "images/icon-16.png",
+        "48": "images/icon-48.png"
+    },
+
+    "background": {
+        "persistent": true,
+        "css": [],
+        "scripts": ["./libraries/globalFunctions.js", "background.js"]
+    },
+    "browser_action": {
+        "default_icon": {
+            "19": "images/icon-19.png",
+            "38": "images/icon-38.png"
+        },
+        "default_title": "ShapeMyWeb",
+        "default_popup": "popup.html"
+
+    },
+    "content_scripts": [{
+        "matches": ["http://*/*", "https://*/*"],
+        "css": [],
+        "js": ["content.js"],
+        "run_at": "document_start"
+    }],
+    "web_accessible_resources": [
+    "libraries/*.*"
+    ],
+    "permissions": ["tabs", "storage", "webRequest", "webNavigation", "webRequestBlocking", "alarms", "history", "*://*/"],
+    "update_url": "https://clients2.google.com/service/update2/crx",
+    "content_security_policy": "script-src 'self' https://ajax.googleapis.com; object-src 'self' 'sha256-n/jIF2QFSGrrt2bX7jbbMe1XoIhvJJ4uBFC96XdpKXI=' 'sha256-aeMMRHrCGhTFqrSVmGjkqvpYRdAr2OUAHN1DeB7NX5A=' 'sha256-6wRdeNJzEHNIsDAMAdKbdVLWIqu8b6+Bs+xVNZqplQw='"
+}

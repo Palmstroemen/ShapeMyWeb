@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>ShapeMyWeb</title>
+    <meta name="description" content="Die Seite, die vom Popup-Script aufgerufen wird.">
+    <link href="smw-style.css" type="text/css" rel="stylesheet">
+ <!--   <link href="shapemyweb.css" type="text/css" rel="stylesheet">  -->
+<script src="libraries/jquery.min.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <script src="toolbar.js"></script>
+    <script src="./libraries/localize.js"></script>
+    <script src="shapemyweb.js"></script>
+    <!-- die nachfolgende Zeile bindet jquery vom Google-Server ein. 
+             die aktuellste Version findet man auf: 
+             https://developers.google.com/speed/libraries?hl=de#jquery
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+        
+        Und falls dieser Download nicht funktioniert gibt's jetzt dann einen
+        Fallback auf eine selbst gehostete Version.
+        <script>
+        window.jQuery || document.write('<script src="http://mysite.com/jquery.min.js"><\/script>'))
+        </script>
+        
+        Und so ladet man es aus dem eigenen Ordner während der Entwicklung, wenn man will.
+        <script type="text/javascript" src="libraries/jquery.min.js"></script>
+        
+         -->
+
+</head>
+
+<body style="width:300px">
+    <div style="width:245px">
+        <header style="border-bottom: 1px solid lightgrey"></header>
+        <div id="toolbar"></div>
+        <div>
+            <p>You do not want to use <span id="domain" style="font-weight: bold">domain.com</span> anymore.</p>
+            <div id="subdomainSection" style="display: none">
+                or just<br>
+                <button id="buttonSubdomain">Avoid:</button>
+                <h3>Info: This site has a subdomain</h3>
+                <i>Sometimes it makes sense to just avoid the subdomain. I.e. if you want to use the website but not a special service they provide on their subdomain.</i>
+            </div>
+            <div id="reminderEntry">
+                <i>
+                    <p><label for="reminderEntrybox">Please remind yourself with a short statement why you do not want to use this website anymore:</label><br><textarea id="reminderEntrybox" type="text" cols="43">I had a really bad customerexperience. Never again!</textarea><br>
+                        We'll remind you next time you occasionally get to this website.</p>
+                    <h3 style="margin-bottom: -10">But there's even more!</h3>
+                    <p>You can <strong>specify alternative websites</strong>, that we'll propose to you next time you are tempted to use this site. For this, once you hit the button below, we'll <strong>open up a new tab</strong> for you, where you can enter your favorite alternative websites to use instead of this website.</p>
+                </i>
+            </div>
+            <div>
+                <button id="buttonConfirm">confirm</button>
+                <button id="buttonCancel">cancel</button>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Binde alle kompilierten Plugins zusammen ein (wie hier unten) oder such dir einzelne Dateien nach Bedarf aus -->
+    <script src="js/bootstrap.min.js"></script>
+
+</body></html>

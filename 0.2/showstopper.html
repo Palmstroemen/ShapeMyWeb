@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- Die 3 Meta-Tags oben *müssen* zuerst im head stehen; jeglicher sonstiger head-Inhalt muss nach diesen Tags kommen -->
+    <title>ShapeMyWeb</title>
+    <meta name="description" content="Die Hauptseite zum Blockieren und Editieren.">
+    <link href="smw-style.css" type="text/css" rel="stylesheet">
+    <link href="popup.css" type="text/css" rel="stylesheet">
+    <link href="sign.css" type="text/css" rel="stylesheet">
+    <link href="showstopper.css" type="text/css" rel="stylesheet">
+
+    <script src="./libraries/jquery.min.js"></script>
+
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+
+    <!-- Meine Libraries und Scripte -->
+    <script src="./libraries/localize.js"></script>
+    <script src="./libraries/communication.js"></script>
+    <script src="./libraries/globalFunctions.js"></script>
+    <script src="showDomainInfos.js"></script>
+    <script src="sign.js"></script>
+    <script src="showstopper.js"></script>
+    <script src="toolbar.js"></script>
+</head>
+
+
+<body class="container">
+    <div class="wrapper">
+        <div class='box infoBox'>
+            <div class="infoBoxSegment">
+                <div style="display: flex">
+                    <div>
+                        <div class="info" id="pauseinfo">
+                            <p><i lang="L002">Paused Info</i></p>
+                        </div>
+                        <h2 id="infoDom" style="display: none">
+                            <span lang='L030'>You do not want to use</span><br>
+                            <span id="domainSolo" style="font-size: 1.3em; font-weight: bold">domain.com</span> <span lang="L034">anymore</span>.
+                        </h2>
+                        <h2 id="infoSub" style="display: none">
+                            <span lang='L031'>From the website</span><br>
+                            <span id="domainSub" style="font-size: 1.3em; font-weight: bold">domain.com</span><br>
+                            <span lang='L032'>you do not want to use the service</span><br>
+                            <span id="avoidedSub" style="font-weight: bold">service</span>
+                            <span lang="L034">anymore</span>!
+                        </h2>
+                        <div id="infoSubs" style="display: none">
+                            <h2 style="margin: 10px">
+                                <span lang='L031'>From the website</span><br>
+                                <span id="domainSubs" style="font-size: 1.3em; font-weight: bold">domain.com</span><br>
+                                <span lang='L033'>you do not want to use the services</span><br>
+                                <span id="avoidedSubs" style="font-weight: bold">services</span>
+                                <span lang="L034">anymore.</span>
+                            </h2>
+                        </div>
+                    </div>
+                    <input id="buttonSetup" class="buttonRole" type="image" src="images/Setup-32.png" alt="setup-button" style="height: 32px; align-self: right">
+                </div>
+                <div id="domainInfo" style="display: none">
+                    <div class="info">
+                        <strong lang='L040'>Info Header</strong><br>
+                        <i lang='L041'>Info</i>
+                    </div>
+                    <div id="subdomainSection" style="margin: 10px; display: none">
+                        <span id='addSubA1' lang='L035' style="display: none">You can also block just</span>
+                        <span id='addSubA2' lang='L036' style="display: none">You can also additionally block</span>
+                        <span id='addSubB1' lang='L037' style="display: none">the service</span>
+                        <span id='addSubB2' lang='L038' style="display: none">one of the services</span>
+                        <div id="buttonSubdom">subdomain</div>
+                        <span lang='L039'>from this website.</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class='infoBoxSegment' id='generalSettings' style="display: flex; justify-items: flex-end">
+                <h2><span lang='L060'>General Settings</span>
+                    <input type="image" src="images/Setup-32.png" alt="Role Person Button" id="buttonLocalSettings" style='float: right'>
+                </h2>
+                <div id='localSettings' style='display: none'>
+                    <div style='margin: 0px 5px 10px 10px' lang='L061'>these settings affect the whole plugin.</div>
+                    <div class="edit">
+                        <div><strong><span lang='L062'>Pausetime</span> <span id='pauseMinutes'>10</span>min.</strong></div>
+                        <div class="setupcontainer">
+                            <input type="range" min="1" max="20" value="2" class="slider" id="pauseTime">
+                        </div>
+                        <span lang='L063'>Pausetime Info</span>
+                    </div>
+                    <div style='margin: 10px 5px 10px 10px'>
+                        <span lang='L064'>
+                            synced Settings
+                        </span>
+                        <input type="image" src="images/Setup-32.png" alt="Role Person Button" id="buttonSyncedSettings" style='float: right'>
+                    </div>
+                    <div id='syncedSettings' style='clear:right'>
+                        <div class="edit" id="doNotEnterSetup" style="padding-bottom: 5px">
+                            <input type="checkbox" id="showDoNotEnter">
+                            <span lang='L070'>show "DO NOT ENTER"</span>
+                        </div>
+                        <div class="edit">
+                            <strong lang='L065'>Roles</strong>
+                            <div class="setupcontainer blocksinline">
+                                <div class="block">
+                                    <div><img src="images/person-32.png" alt="Role Person"><input type="checkbox" id="showRole0"></div>
+                                    <span lang='L066' style='justify-self: center'>Me </span>
+                                </div>
+                                <div class="block">
+                                    <div><img src="images/home-32.png" alt="Role Home"><input type="checkbox" id="showRole1"></div>
+                                    <span lang='L067'>Home </span>
+                                </div>
+                                <div class="block">
+                                    <div><img src="images/job-32.png" alt="Role Job"><input type="checkbox" id="showRole2"></div>
+                                    <span lang='L068'>Work </span>
+                                </div>
+                                <div class="block">
+                                    <div><img src="images/coffee-32.png" alt="Role Coffee"><input type="checkbox" id="showRole3"></div>
+                                    <span lang='L069'>Out </span>
+                                </div>
+                            </div>
+                            <div style="clear: left"></div>
+                        </div>
+                        <div class="edit" style="padding-bottom: 5px">
+                            <div>
+                                <strong style='vertical-align: top' lang='L071'>Avoid-levels</strong>
+                                <img src="images/stack1_32.png" alt="Role Person">
+                                <img src="images/stack3_32.png" alt="Role Person">
+                            </div>
+                            <p>
+                                <input type="checkbox" id="justRiseAvoidLevels">
+                                <span lang='L072'>Just rise avoid levels.</span>
+                            </p>
+                            <div>
+                                <input type="checkbox" id="noChangeToAvoidLevel0">
+                                <span lang='L073'>Do not allow changes to roles with avoid-level 0.</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="box signBox">
+            <div id="toolbar" style="z-index: 24"></div>
+            <div style="margin-top: -30px">
+                <div id="sign">
+                    <div id="signBackground"></div>
+                    <div>
+                        <p id="doNot">DO NOT</p>
+                    </div>
+                    <div>
+                        <p id="enter">ENTER</p>
+                    </div>
+                    <div id="upperLipp"></div>
+                    <div id="lowerLipp"></div>
+                    <div id="eyeLeft" class="eyes"></div>
+                    <div id="eyeRight" class="eyes"></div>
+                    <div id="whiteBar">
+                        <em>
+                            <span id="reminder" class="lines2"></span>
+                            <span id="unavoidHoover" class="lines1" style='display: none' lang='L013'>
+                                OH NO!
+                            </span>
+                            <span id="pauseHoover" class="lines1" style='display: none' lang='L014'>
+                                Really?
+                            </span>
+                            <span id="passbyHoover" class="lines2" style='display: none' lang='L015'>
+                                PassBy?
+                            </span>
+                            <textarea id="reminderEntrybox" class="lines2" style="border: none; display: none" type="text" cols="17" rows='2'></textarea>
+                            <div id='examplePhrases' style='display: none' lang='L050'>ex</div>
+                        </em>
+                    </div>
+                    <div id="pupilleLeft" class="eyes"></div>
+                    <div id="pupilleRight" class="eyes"></div>
+                    <div id="toucharea"></div>
+                    <input id="buttonPassby" type="image" src="../images/pfeil-over-32.png" alt="pass by button">
+                    <input id="buttonUnavoid" type="image" src="../images/cross-over-32.png" alt="Delete button">
+                    <input id="buttonPause2" type="image" src="../images/pause-32.png" alt="pause button">
+
+                </div>
+                <div id='domainSolo2'></div>
+                <div id='confirmButtons' style='display: none'>
+                    <button id="buttonCancel" lang='L028'>cancel</button>
+                    <button id="buttonConfirm" lang='L029'>confirm</button>
+                </div>
+                <div id="buttons">
+                </div>
+            </div>
+        </div>
+
+        <div class="box alternativesBox">
+            <h2 lang='L020'>alternative Websites</h2>
+            <div id='alternativesArea'>
+                <!-- hier kommen die alternativlinks rein -->
+            </div>
+            <div id='alternativesButton' class='edit'>
+                <div id='alternativesUrl'>
+                    <p>
+                        <i><span lang='L024'>copy and paste here</span></i>
+                        <input id="inputAlternatives" type="url" value="https://">
+                        <br><i id='alternativeNoUrl' class='warning' lang='L025'>Sorry this is no url</i>
+                    </p>
+                </div>
+                <div id='alternativesClaimArea' style="display: none; margin: 10px 0px 5px 0px">
+                    <p>
+                        <strong>2. </strong>
+                        <i><span lang='L026'>add a claim</span></i>
+                    </p>
+                    <strong>3. </strong>
+                    <i><span lang='L027'>choose a color</span></i>
+                    <button id='buttonAlternativesOK'>OK</button>
+                </div>
+            </div>
+        </div>
+
+    </div>
+    <!-- die folgenden divs sind nur Stubs da sie von manchen .js Elementen benötigt werden -->
+    <div style='display: none'>
+        <div id='advancedOff'></div>
+        <div id='advancedNo'></div>
+        <div id='advancedOn'></div>
+        <div id='advanced'></div>
+    </div>
+
+    <!-- Binde alle kompilierten Plugins zusammen ein (wie hier unten) oder such dir einzelne Dateien nach Bedarf aus -->
+
+</body>
+<!--
+<script src="sign.js"></script>
+-->
+
+</html>

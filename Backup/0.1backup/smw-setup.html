@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>ShapeMyWeb</title>
+    <meta name="description" content="Die Setup-Seite, die vom Popup-Script aufgerufen wird.">
+    <link href="smw-style.css" type="text/css" rel="stylesheet">
+<!--    <link href="setup.css" type="text/css" rel="stylesheet">  -->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <link rel="stylesheet" href="https://ajax.googleapis.com/ajax/libs/jqueryui/1.12.1/themes/smoothness/jquery-ui.css">
+    <script src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.js"></script>
+
+    <script src="libraries/smw-blacklist.js" type="text/javascript"></script>
+<!--    <script type="module" src='./libraries/smw-blacklist.js'></script> -->
+    <script src="smw-setup.js" type="text/javascript"></script>
+    <!-- die nachfolgende Zeile bindet jquery vom Google-Server ein. 
+             die aktuellste Version findet man auf: 
+             https://developers.google.com/speed/libraries?hl=de#jquery
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+        
+        Und falls dieser Download nicht funktioniert gibt's jetzt dann einen
+        Fallback auf eine selbst gehostete Version.
+        <script>
+        window.jQuery || document.write('<script src="http://mysite.com/jquery.min.js"><\/script>'))
+        </script>
+        
+        Und so ladet man es aus dem eigenen Ordner während der Entwicklung, wenn man will.
+        <script type="text/javascript" src="libraries/jquery.min.js"></script>
+        
+         -->
+      <style>
+          #feedback { font-size: 1.4em; }
+          #selectable .ui-selecting { background: skyblue; }
+          #selectable .ui-selected { background: dodgerblue; color: white; }
+          #selectable { list-style-type: none; margin: 0; padding: 0; width: 60%; }
+          #selectable li { margin: 3px; padding: 0.4em; font-size: 1.4em; height: 18px; }
+      </style>
+ 
+
+</head>
+
+<body>
+    <header>
+        <div style="border-bottom: 1px solid lightgrey">
+            <table style="margin-bottom: 0">
+                <tr style="vertical-align: middle">
+                    <tc>
+                        <td style="vertical-align: top">
+                            <img src="images/icon-32.png" alt="No Entry Sign">
+                        </td>
+                    </tc>
+                    <tc>
+                        <td>
+                            <h2 style="margin-bottom: 0"> Shape My Web </h2>
+                        </td>
+                    </tc>
+                    <tc>
+                        <td style="vertical-align: top">
+                            <img src="images/icon-32.png" alt="No Entry Sign">
+                        </td>
+                    </tc>
+                    <tc>
+                        <td>
+                            <h2 style="margin-bottom: 0"> </h2>
+                        </td>
+                    </tc>
+                    <tc>
+                        <td id="setup" style="vertical-align: top">
+                            <img src="images/zahnrad-32.png" alt="setup-button">
+                        </td>
+                    </tc>
+                </tr>
+            </table>
+        </div>
+    </header>
+    <div>
+        <p>This is the setup site</p>
+        <div>
+            <h1>Avoided Websites</h1>
+            <ol id="selectable">
+                <li><b>domain</b></li>
+                <div id="domainlist"></div>
+            </ol>
+        </div>
+    </div>
+</body>
+
+</html>

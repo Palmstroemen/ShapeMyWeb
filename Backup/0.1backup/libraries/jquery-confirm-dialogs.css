@@ -1,0 +1,60 @@
+// Hier wird das Aussehen der Popup-Dialoge definiert.
+
+// Default Values for the popup-Window    
+jconfirm.defaults = {
+    title: 'ShapeMyWeb',
+    titleClass: '',
+    type: 'default',
+    typeAnimated: true,
+    draggable: false,
+    dragWindowGap: 15,
+    dragWindowBorder: true,
+    animateFromElement: true,
+    smoothContent: true,
+    content: 'Are you sure to continue?',
+    buttons: {},
+    defaultButtons: {
+        ok: {
+            action: function () {}
+        },
+        close: {
+            action: function () {}
+        },
+    },
+    contentLoaded: function (data, status, xhr) {},
+    icon: 'fa fa-warning',
+    lazyOpen: false,
+    bgOpacity: 0.3,
+    theme: 'supervan',
+    animation: 'scale',
+    closeAnimation: 'scale',
+    animationSpeed: 400,
+    animationBounce: 1,
+    rtl: false,
+    container: 'body',
+    containerFluid: false,
+    backgroundDismiss: true,
+    backgroundDismissAnimation: 'shake',
+    autoClose: false,
+    closeIcon: null,
+    closeIconClass: false,
+    watchInterval: 100,
+    columnClass: 'col-md-4 col-md-offset-4 col-sm-6 col-sm-offset-3 col-xs-10 col-xs-offset-1',
+    boxWidth: '50%',
+    scrollToPreviousElement: true,
+    scrollToPreviousElementAnimate: true,
+    useBootstrap: true,
+    offsetTop: 40,
+    offsetBottom: 40,
+    bootstrapClasses: {
+        container: 'container',
+        containerFluid: 'container-fluid',
+        row: 'row',
+    },
+    onContentReady: function () {},
+    onOpenBefore: function () {},
+    onOpen: function () {},
+    onClose: function () {},
+    onDestroy: function () {},
+    onAction: function () {}
+};

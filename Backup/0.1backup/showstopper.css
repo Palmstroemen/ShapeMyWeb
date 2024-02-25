@@ -1,0 +1,26 @@
+// Die CSS-Datei zur showstopper.html
+
+/* grid layout, 3 columns */
+ .wrapper {
+     display: grid;
+     grid-template-columns: 1fr 1fr 1fr; /* 1 fraction
+ */    
+ }
+
+.alternativesBox {
+     grid-column: auto / span 1;
+     grid-row: 1 / span 1;
+    
+}
+
+.signBox {
+     grid-column: auto / span 1;
+     grid-row: 1 / span 1;
+    
+}
+
+.infoBox {
+     grid-column: auto / span 1;
+     grid-row: 1 / span 1;
+    
+}

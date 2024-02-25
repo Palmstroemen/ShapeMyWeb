@@ -1,0 +1,20 @@
+/*******************************************************
+*
+Theme Name:    Dafault-Theme
+Theme URI:
+Description:   Abweichungen vom Haupt-CSS
+Version:       1.0
+Author:        Oliver Rafelsberger
+License:       none (public domain)
+Tags:          CSS Normalisierung und Organisation, 4 Spalten, Streifen in voller Breite, responsiv
+*
+*******************************************************/
+
+/* Page-Elements *************************************/
+#buttonWhitelist {
+    background-color: darkkhaki
+}
+
+#buttonUnAvoid {
+    background-color: burlywood
+}

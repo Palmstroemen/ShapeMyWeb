@@ -1,0 +1,77 @@
+/*******************************************************
+*
+Theme Name:    Dafault-Theme
+Theme URI:
+Description:   Das Haut CSS für die ShapeMyWeb-Extension
+Version:       1.0
+Author:        Oliver Rafelsberger
+License:       none (public domain)
+Tags:          CSS Normalisierung und Organisation, 4 Spalten, Streifen in voller Breite, responsiv
+*
+*******************************************************/
+
+/* CSS-Reset *******************************************
+Wird verwendet um die unterschiedlichen Browser-Grundeinstellungen zu harmonisieren.
+Wird hier eigentlich nicht benötigt, da ja nur für den Chrome entwickelt wird.
+Aber da das angeblich auch auf dem Firefox einbindbar ist, zur Sicherheit doch.
+*******************************************************/
+* {
+    box-sizing: border-box;
+}
+table {
+    border-collapse: collapse;
+    border-spacing: 0;
+}
+th, td {
+    text-align: left;
+    vertical-align: top;
+}
+h1, h2, h3, h4, h5, h6, th, td, caption {
+    font-weight: normal;
+}
+img { border: 0; }
+
+
+/* Colors ********************************************/
+:root {
+    --header-bg-color: white;
+    --main-bg-color: floralwhite;
+    --button-color: bisque;
+    --button-color-hoover: #feedba;
+    --focus-color: #cd0a0a;
+}
+
+
+/* Page-Elements *************************************/
+header {
+    background-color: var(--header-bg-color);
+}
+
+
+.buttonRole {
+    background-color: var(--main-bg-color);
+}
+
+.buttonRole:hover {
+    background-color: var(--button-color-hoover);
+}
+
+.active{
+    background-color: var(--button-color-hoover);
+}
+
+body {
+    background-color: var(--main-bg-color);
+}
+
+button {
+    background-color:lightcoral;
+    color:white;
+    border: none;
+    border-radius: 0.5em;
+    padding: 0.2em 0.9em;
+    margin: 5px;
+    font-size: 1.2em;
+}
+
+button:focus {outline-color:var(--focus-color)};
