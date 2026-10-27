@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>ShapeMyWeb</title>
+    <meta name="description" content="Die Setup-Seite, die vom Popup-Script aufgerufen wird.">
+    <link href="smw-style.css" type="text/css" rel="stylesheet">
+    <style>
+        #domainlist { list-style-type: none; margin: 0; padding: 0; width: 60%; }
+        #domainlist li { margin: 3px; padding: 0.4em; font-size: 1.4em; }
+        #domainlist li.inactive { color: grey; }
+        #domainlist .details { font-size: 0.6em; color: grey; }
+    </style>
+    <script src="libraries/globalFunctions.js"></script>
+    <script src="smw-setup.js"></script>
+</head>
+
+<body>
+    <header>
+        <div style="border-bottom: 1px solid lightgrey">
+            <table style="margin-bottom: 0">
+                <tr style="vertical-align: middle">
+                    <td style="vertical-align: top">
+                        <img src="images/icon-32.png" alt="No Entry Sign">
+                    </td>
+                    <td>
+                        <h2 style="margin-bottom: 0"> Shape My Web </h2>
+                    </td>
+                </tr>
+            </table>
+        </div>
+    </header>
+    <div>
+        <h1>Avoided Websites</h1>
+        <ol id="domainlist"></ol>
+    </div>
+</body>
+
+</html>

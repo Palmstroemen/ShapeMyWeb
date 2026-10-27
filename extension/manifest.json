@@ -1,0 +1,38 @@
+{
+    "manifest_version": 3,
+    "name": "__MSG_extName__",
+    "version": "0.3.0",
+    "default_locale": "en",
+    "description": "Web Filter enables self-determined web filtering.",
+    "omnibox": { "keyword": "avoid" },
+
+    "icons": {
+        "16": "images/icon-16.png",
+        "48": "images/icon-48.png",
+        "128": "images/icon-128.png"
+    },
+
+    "background": {
+        "service_worker": "background.js",
+        "scripts": ["libraries/globalFunctions.js", "background.js"]
+    },
+
+    "action": {
+        "default_icon": {
+            "19": "images/icon-19.png",
+            "38": "images/icon-38.png"
+        },
+        "default_title": "ShapeMyWeb",
+        "default_popup": "popup.html"
+    },
+
+    "permissions": ["tabs", "storage", "webNavigation", "history"],
+
+    "browser_specific_settings": {
+        "gecko": {
+            "id": "shapemyweb@palmstroemen.github.io",
+            "strict_min_version": "121.0",
+            "data_collection_permissions": { "required": ["none"] }
+        }
+    }
+}
