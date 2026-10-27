@@ -26,7 +26,7 @@ alternativen Webseiten, die du stattdessen besuchen möchtest.
 - **Pause und Pass-by:** die Extension für einige Minuten pausieren oder eine
   Seite einmal durchlassen.
 - **Alternativen:** eigene Links mit kurzem Satz und Farbe.
-- **Zwei Designs:** *Funny*, das verspielte Stoppschild, oder *Professional*, eine ruhige,
+- **Zwei Designs:** *Lustig*, das verspielte Stoppschild, oder *Professionell*, eine ruhige,
   schlichte Ansicht (Einstellungen → Darstellung).
 
 Blacklist und Einstellungen werden über `storage.sync` zwischen deinen Geräten

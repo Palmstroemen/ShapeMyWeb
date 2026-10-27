@@ -83,8 +83,8 @@
 "D006": { "message": "Non evitare più" },
 "D007": { "message": "Modifica" },
 "D010": { "message": "Aspetto" },
-"D011": { "message": "Funny" },
-"D012": { "message": "Professional" },
+"D011": { "message": "Divertente" },
+"D012": { "message": "Professionale" },
 "D013": { "message": "Siti evitati" },
 "S001": { "message": "Impostazioni" },
 "S010": { "message": "Avvio rapido" },
@@ -120,5 +120,6 @@
 "S043": { "message": "Le modifiche vengono salvate subito." },
 "S044": { "message": "Salvato" },
 "S045": { "message": "Dettagli" },
+"S046": { "message": "Errore durante il salvataggio:" },
 "end": { "message": "fine"}
 }

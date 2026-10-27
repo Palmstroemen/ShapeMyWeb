@@ -21,8 +21,24 @@ function el(tag, props = {}, ...children) {
 }
 
 
-function send(message) {
-    return chrome.runtime.sendMessage(message);
+async function send(message) {
+    let ans = await chrome.runtime.sendMessage(message);
+    if (ans?.error) throw new Error(ans.error);
+    return ans;
+}
+
+
+function guarded(action) {
+    // Fehler nicht stumm schlucken: anzeigen und die Seite wieder auf den gespeicherten Stand bringen.
+    return async function (...args) {
+        try {
+            await action.apply(this, args);
+        } catch (error) {
+            console.error(error);
+            showError(error);
+            await refresh().catch(() => {});
+        }
+    };
 }
 
 
@@ -53,12 +69,12 @@ function domainFrom(text) {
 // Darstellung ...........................................................
 
 function initDesignSetup(settings) {
-    // Umschalter zwischen "Funny" (Stoppschild) und "Professional"
+    // Umschalter zwischen "Lustig" (Stoppschild) und "Professionell"
     document.getElementById(settings.design == 'calm' ? 'setupDesignCalm' : 'setupDesignClassic').checked = true;
     for (let radio of document.querySelectorAll('input[name="design"]')) {
         radio.addEventListener('change', function () {
             settings.design = this.value;
-            send({ type: "saveSettings", settings: settings }).then(showSaved);
+            send({ type: "saveSettings", settings: settings }).then(showSaved, showError);
         });
     }
 }
@@ -112,7 +128,7 @@ function packageCard(pkg) {
     let preview = el('div', { class: 'packagePreview', hidden: true });
     card.append(
         el('label', { class: 'packageSwitch' },
-            el('input', { type: 'checkbox', class: 'packageToggle', onchange: () => togglePackage(pkg, card) }),
+            el('input', { type: 'checkbox', class: 'packageToggle', onchange: guarded(() => togglePackage(pkg, card)) }),
             el('span', { class: 'packageTitle', textContent: msg('S012') + ' ' + localized(pkg.title, lang) })),
         el('div', { class: 'packageInfo' },
             el('span', { textContent: pkg.alternatives.length + ' ' + msg('S017') }),
@@ -138,11 +154,11 @@ function toggleDetails(pkg, card, preview) {
         el('p', { class: 'small muted', textContent: domains.join(', ') }),
         el('div', { class: 'small muted', textContent: msg('S018') }),
         el('input', { type: 'text', class: 'packageReminder', value: current,
-                      onchange: function () { changeReminder(pkg, this.value); } }),
+                      onchange: guarded(function () { return changeReminder(pkg, this.value); }) }),
         ...pkg.alternatives.map(a => el('label', {},
             el('input', { type: 'checkbox', class: 'packageAlt', value: a.url,
                           checked: active ? stored.has(a.url) : preselected(a, regions),
-                          onchange: function () { changeAlternative(pkg, a, this.checked); } }),
+                          onchange: guarded(function () { return changeAlternative(pkg, a, this.checked); }) }),
             el('span', {},
                 el('span', { class: 'altName', textContent: a.name }), ' – ',
                 el('span', { class: 'altClaim', textContent: localized(a.claim, lang) })))));
@@ -216,11 +232,21 @@ async function changeReminder(pkg, text) {
 
 let savedTimer;
 
-function showSaved() {
+function showNotice(text, failed) {
     let notice = document.getElementById('savedNotice');
+    notice.textContent = text;
+    notice.classList.toggle('failed', failed);
     notice.classList.add('visible');
     clearTimeout(savedTimer);
-    savedTimer = setTimeout(() => notice.classList.remove('visible'), 1800);
+    savedTimer = setTimeout(() => notice.classList.remove('visible'), failed ? 8000 : 1800);
+}
+
+function showSaved() {
+    showNotice('✓ ' + msg('S044'), false);
+}
+
+function showError(error) {
+    showNotice(msg('S046') + ' ' + (error?.message ?? error), true);
 }
 
 
@@ -252,41 +278,41 @@ function entryCard(domain, entry) {
 
     let reminderInput = el('input', { type: 'text', class: 'entryReminder', value: entry.reminder ?? '',
         placeholder: avoided ? '' : msg('S032'),
-        onchange: () => { if (avoided) save({ reminder: reminderInput.value.trim() || msg('S041') }); } });
+        onchange: guarded(async () => { if (avoided) await save({ reminder: reminderInput.value.trim() || msg('S041') }); }) });
 
     let actions = el('div', { class: 'entryActions' },
         avoided
             ? el('button', { type: 'button', class: 'link entryUnavoid', textContent: msg('S025'),
-                             onclick: async () => { await send({ type: 'unavoid-site', avoidDomain: domain }); await refresh(); showSaved(); } })
+                             onclick: guarded(async () => { await send({ type: 'unavoid-site', avoidDomain: domain }); await refresh(); showSaved(); }) })
             : el('button', { type: 'button', class: 'link entryReavoid', textContent: msg('S026'),
-                             onclick: () => save({ reminder: reminderInput.value.trim() || msg('S041') }) }),
+                             onclick: guarded(() => save({ reminder: reminderInput.value.trim() || msg('S041') })) }),
         el('button', { type: 'button', class: 'link entryDelete', textContent: msg('S027'),
-                       onclick: async () => {
+                       onclick: guarded(async () => {
                            if (!confirm(msg('S040'))) return;
                            await send({ type: 'delete-entry', domain: domain });
                            await refresh();
                            showSaved();
-                       } }));
+                       }) }));
 
     let meta = el('div', { class: 'entryMeta' }, el('span', { textContent: msg('S028') + ':' }),
         ...roleNames.map((name, role) => el('label', {}, msg(name) + ' ',
             el('select', { class: 'level', dataset: { role: role },
-                           onchange: function () {
+                           onchange: guarded(function () {
                                let changed = [...levels];
                                changed[role] = Number(this.value);
-                               save({ avoidLevels: changed });
-                           } },
+                               return save({ avoidLevels: changed });
+                           }) },
                 ...[0, 1, 2, 3].map(level => el('option', { value: level, textContent: level, selected: levels[role] == level }))))),
         (entry.subDomains ?? []).length ? el('span', { textContent: msg('S042') + ' /' + entry.subDomains.join(', /') }) : null);
 
     let altUrl   = el('input', { type: 'url', class: 'altUrl', placeholder: msg('S029') });
     let altClaim = el('input', { type: 'text', class: 'altClaim', placeholder: msg('S030') });
-    let addAlternative = () => {
+    let addAlternative = guarded(async () => {
         let text = altUrl.value.trim();
         let url  = /^[a-z]+:\/\//i.test(text) ? text : 'https://' + text;
         if (!domainFrom(url)) return altUrl.focus();
-        save({ alternatives: [...alternatives, { url: url, name: splitUrl(url)[0], claim: altClaim.value.trim(), color: altColor(url) }] });
-    };
+        await save({ alternatives: [...alternatives, { url: url, name: splitUrl(url)[0], claim: altClaim.value.trim(), color: altColor(url) }] });
+    });
 
     return el('div', { class: 'entry' + (avoided ? '' : ' inactive'), dataset: { domain: domain } },
         el('div', { class: 'entryHead' }, el('span', { class: 'entryDomain', textContent: domain }), reminderInput, actions),
@@ -296,7 +322,7 @@ function entryCard(domain, entry) {
                 el('a', { href: isWebUrl(a.url) ? a.url : '#', target: '_blank', class: 'altName', textContent: a.name }),
                 el('span', { class: 'altClaim', textContent: a.claim ?? '' }),
                 el('button', { type: 'button', class: 'link altRemove', textContent: '×', title: msg('S027'),
-                               onclick: () => save({ alternatives: alternatives.filter((_, i) => i != index) }) }))),
+                               onclick: guarded(() => save({ alternatives: alternatives.filter((_, i) => i != index) })) }))),
             el('div', { class: 'altAddRow' }, altUrl, altClaim,
                 el('button', { type: 'button', class: 'altAdd', textContent: msg('S023'), onclick: addAlternative }))));
 }
@@ -365,9 +391,9 @@ document.addEventListener("DOMContentLoaded", async function () {
     localizeHtmlPage();
     document.getElementById('newDomain').placeholder   = msg('S021');
     document.getElementById('newReminder').placeholder = msg('S022');
-    document.getElementById('newEntry').addEventListener('submit', addEntry);
-    document.getElementById('exportList').addEventListener('click', exportList);
-    document.getElementById('importFile').addEventListener('change', importList);
+    document.getElementById('newEntry').addEventListener('submit', guarded(addEntry));
+    document.getElementById('exportList').addEventListener('click', guarded(exportList));
+    document.getElementById('importFile').addEventListener('change', guarded(importList));
 
     renderPackages();
     initDesignSetup((await send({ type: "getSettings" })).settings);

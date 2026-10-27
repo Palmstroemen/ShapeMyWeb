@@ -18,7 +18,7 @@ const blockPage       = chrome.runtime.getURL('showstopper.html');
 const blPrefix        = 'bl:';
 const passByTime      = 12 * 1000;   // So lange darf man nach "pass-by" auf der Seite bleiben.
 const level1Time      = 60 * 1000;   // Avoid-Level 1 warnt höchstens einmal pro Minute.
-const designs         = ['classic', 'calm'];   // angezeigt als "Funny" (Stoppschild) bzw. "Professional"
+const designs         = ['classic', 'calm'];   // angezeigt als "Lustig" (Stoppschild) bzw. "Professionell"
 const defaultSynced   = { textOpacity: 0.7, showRole: [true, true, true, true],
                           justRiseAvoidLevels: false, noChangeToAvoidLevel0: false, design: 'classic' };
 const defaultLocal    = { pauseTime: 10 };
@@ -178,7 +178,7 @@ function onMessage(request, sender, respond) {
     if (!handler) return false;   // ist für eine andere Seite der Extension bestimmt
     handler(request, sender).then(respond, (error) => {
         console.error("BAC: Fehler bei", request.type, error);
-        respond(undefined);
+        respond({ error: String(error?.message ?? error) });   // die Seite zeigt den Fehler an
     });
     return true;   // Antwort kommt asynchron
 }

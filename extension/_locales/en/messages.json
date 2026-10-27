@@ -120,5 +120,6 @@
 "S043": { "message": "Changes are saved immediately." },
 "S044": { "message": "Saved" },
 "S045": { "message": "Details" },
+"S046": { "message": "Could not save:" },
 "end": { "message": "end"}
 }

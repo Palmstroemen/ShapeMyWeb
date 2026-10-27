@@ -227,6 +227,11 @@ button.link {
     opacity: 1;
 }
 
+.savedNotice.failed {
+    max-width: min(480px, calc(100vw - 40px));
+    background: var(--sign-red);
+}
+
 .packagePreview {
     margin-top: 12px;
 }

@@ -359,3 +359,9 @@ test('release-entries gibt Paket-Seiten frei, Teilbereiche anderer Pakete bleibe
     await bg.send({ type: 'release-entries', entries: { 'google.com': { subDomains: ['maps'] }, 'gibtsnicht.at': { subDomains: [] } } });
     assert.equal((await bg.send({ type: 'getBlacklist' })).blacklist['google.com'].reminder, undefined);
 });
+
+test('Fehler im Background kommen als Fehlermeldung bei der Seite an', async () => {
+    const bg = loadBackground();
+    const ans = await bg.send({ type: 'actualize-AO' });
+    assert.match(ans?.error ?? '', /\w/);
+});

@@ -83,8 +83,8 @@
 "D006": { "message": "Nicht mehr vermeiden" },
 "D007": { "message": "Bearbeiten" },
 "D010": { "message": "Darstellung" },
-"D011": { "message": "Funny" },
-"D012": { "message": "Professional" },
+"D011": { "message": "Lustig" },
+"D012": { "message": "Professionell" },
 "D013": { "message": "Vermiedene Webseiten" },
 "S001": { "message": "Einstellungen" },
 "S010": { "message": "Schnellstart" },
@@ -120,5 +120,6 @@
 "S043": { "message": "Änderungen werden sofort gespeichert." },
 "S044": { "message": "Gespeichert" },
 "S045": { "message": "Details" },
+"S046": { "message": "Fehler beim Speichern:" },
 "end": { "message": "ende"}
 }
