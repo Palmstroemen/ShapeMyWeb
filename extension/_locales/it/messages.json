@@ -85,5 +85,6 @@
 "D010": { "message": "Aspetto" },
 "D011": { "message": "Segnale di stop" },
 "D012": { "message": "Sobrio" },
+"D013": { "message": "Siti evitati" },
 "end": { "message": "fine"}
 }

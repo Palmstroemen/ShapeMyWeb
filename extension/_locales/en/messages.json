@@ -85,5 +85,6 @@
 "D010": { "message": "Appearance" },
 "D011": { "message": "Stop sign" },
 "D012": { "message": "Calm" },
+"D013": { "message": "Avoided websites" },
 "end": { "message": "end"}
 }

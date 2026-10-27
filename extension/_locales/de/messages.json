@@ -85,5 +85,6 @@
 "D010": { "message": "Darstellung" },
 "D011": { "message": "Stoppschild" },
 "D012": { "message": "Ruhig" },
+"D013": { "message": "Vermiedene Webseiten" },
 "end": { "message": "ende"}
 }

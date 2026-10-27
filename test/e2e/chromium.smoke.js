@@ -17,6 +17,12 @@ function check(condition, message) {
     if (!condition) throw new Error(message);
 }
 
+async function clickAt(page, selector) {
+    // page.click() hängt auf der Setup-Seite (Puppeteer); ein echter Mausklick funktioniert.
+    const box = await (await page.$(selector)).boundingBox();
+    await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
+}
+
 function watch(page, name) {
     page.on('pageerror', e => errors.push(`${name}: ${e.message}`));
     page.on('console', m => {
@@ -85,6 +91,18 @@ function watch(page, name) {
         const icon = await page.$eval('#alternativesArea img.icon', e => e.getAttribute('src'));
         log('Icon der Alternative:', icon);
         check(icon === 'https://orf.at/favicon.ico', 'Icon soll direkt von der Alternative kommen, nicht von einem Drittanbieter');
+        // Die Augen sitzen genau auf den beiden O von "DO NOT", egal mit welcher Schrift
+        await page.mouse.move(700, 300);
+        await sleep(1000);
+        const eyeOffsets = await page.evaluate(() => {
+            const center = el => { const r = el.getBoundingClientRect(); return r.left + r.width / 2; };
+            const os = [...document.querySelectorAll('#doNot .signO')];
+            if (os.length !== 2) return null;
+            return [center(document.getElementById('eyeLeft')) - center(os[0]),
+                    center(document.getElementById('eyeRight')) - center(os[1])];
+        });
+        log('Abstand Auge zu O (px):', eyeOffsets);
+        check(eyeOffsets && eyeOffsets.every(dx => Math.abs(dx) < 3), 'Augen sitzen nicht auf den O von DO NOT');
 
         // 2. Nicht gelistete Seite
         const free = await browser.newPage();
@@ -174,6 +192,17 @@ function watch(page, name) {
         const listed = await remote.$$eval('#domainlist li strong', l => l.map(e => e.textContent));
         log('Setup-Liste:', listed);
         check(listed.includes('example.com') && listed.includes('news.net'), 'Setup-Liste unvollständig');
+        const radios = await remote.evaluate(() => [
+            document.getElementById('setupDesignClassic')?.checked,
+            document.getElementById('setupDesignCalm')?.checked
+        ]);
+        log('Setup-Seite, Darstellung (Stoppschild, ruhig):', radios);
+        check(radios[0] === true && radios[1] === false, 'Setup-Seite zeigt den Design-Umschalter nicht richtig an');
+        await clickAt(remote, '#setupDesignCalm');
+        await sleep(300);
+        check((await send({ type: 'getSettings' })).settings.design === 'calm', 'Setup-Seite speichert das Design nicht');
+        await clickAt(remote, '#setupDesignClassic');
+        await sleep(300);
 
         // 6. Blockieren funktioniert auch, nachdem Chromium den Service Worker beendet hat
         await send({ type: 'actualize-AO', avoid: { domain: 'spiel.de', reminder: 'Später!', avoidLevels: [3, 3, 3, 3] } });
