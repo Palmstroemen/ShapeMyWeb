@@ -1,6 +1,6 @@
 {
   "name": "shapemyweb",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "private": true,
   "description": "Browser-Extension für eine persönliche Blacklist: Webseiten bewusst vermeiden.",
   "license": "MIT",
@@ -12,7 +12,8 @@
     "lint": "web-ext lint --source-dir extension",
     "build": "web-ext build --source-dir extension --artifacts-dir dist --overwrite-dest",
     "start:firefox": "web-ext run --source-dir extension",
-    "start:chrome": "web-ext run --source-dir extension --target chromium"
+    "start:chrome": "web-ext run --source-dir extension --target chromium",
+    "store-assets": "node scripts/store-assets.js"
   },
   "devDependencies": {
     "web-ext": "^8.3.0",

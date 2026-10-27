@@ -50,6 +50,7 @@ npm test                 # Unit-Tests der Background-Logik (schnell)
 npm run test:e2e         # Smoke-Tests in Chromium und Firefox (ca. 1–2 Minuten)
 npm run lint             # Firefox-Linter (web-ext)
 npm run build            # ZIP für Chrome Web Store / addons.mozilla.org nach dist/
+npm run store-assets     # Store-Screenshots und Werbekachel nach docs/store/ (de, en)
 ```
 
 Pfade zu den Browsern lassen sich mit `CHROME_PATH` und `FIREFOX_PATH` setzen.

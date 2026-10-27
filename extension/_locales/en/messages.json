@@ -25,7 +25,7 @@
 "L027": { "message": "Maybe you want to choose another color? (Use the button in the upper left corner for this!)", "description": "Entry-Title to choose a color."},
 "L028": { "message": "cancel", "description": " "},
 "L029": { "message": "confirm", "description": " "},
-"L030": { "message": "You don not want to use the website", "description": " "},
+"L030": { "message": "You do not want to use the website", "description": " "},
 "L031": { "message": "From the website", "description": " "},
 "L032": { "message": "you do not want to use the service", "description": " "},
 "L033": { "message": "you do not want to use the services", "description": " "},
