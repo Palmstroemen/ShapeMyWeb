@@ -6,6 +6,8 @@
 const puppeteer = require('puppeteer-core');
 const http = require('node:http');
 const path = require('node:path');
+const fs   = require('node:fs');
+const os   = require('node:os');
 
 const extDir     = path.join(__dirname, '..', '..', 'extension');
 const chromePath = process.env.CHROME_PATH || '/usr/bin/chromium';
@@ -19,6 +21,7 @@ function check(condition, message) {
 
 async function clickAt(page, selector) {
     // page.click() hängt auf der Setup-Seite (Puppeteer); ein echter Mausklick funktioniert.
+    await page.$eval(selector, e => e.scrollIntoView({ block: 'center' }));
     const box = await (await page.$(selector)).boundingBox();
     await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
 }
@@ -62,6 +65,7 @@ function watch(page, name) {
         log('Willkommensseite:', welcomeTitle);
         check(welcomeTitle === 'Willkommen bei ShapeMyWeb!', 'Willkommensseite nicht übersetzt');
         log('Inkognito-Status:', await welcome.$eval('#incognitoStatus', e => e.textContent));
+        check(await welcome.$('a[href^="smw-setup.html"]') !== null, 'Willkommensseite verweist nicht auf die Pakete');
 
         // Eine Extension-Seite dient als Fernbedienung für Messages an den Background.
         const remote = await browser.newPage();
@@ -189,7 +193,7 @@ function watch(page, name) {
         check(helpTarget, 'Hilfe-Button öffnet die Willkommensseite nicht');
         await remote.reload();
         await sleep(500);
-        const listed = await remote.$$eval('#domainlist li strong', l => l.map(e => e.textContent));
+        const listed = await remote.$$eval('.entryDomain', l => l.map(e => e.textContent));
         log('Setup-Liste:', listed);
         check(listed.includes('example.com') && listed.includes('news.net'), 'Setup-Liste unvollständig');
         const radios = await remote.evaluate(() => [
@@ -203,6 +207,84 @@ function watch(page, name) {
         check((await send({ type: 'getSettings' })).settings.design === 'calm', 'Setup-Seite speichert das Design nicht');
         await clickAt(remote, '#setupDesignClassic');
         await sleep(300);
+
+        // 5b. Einstellungsseite: Pakete, Verwaltung, Export und Import
+        remote.on('dialog', dialog => dialog.accept());
+        const entryOf = async domain => (await blacklist())[domain];
+        const setValue = (selector, value) => remote.evaluate((sel, val) => {
+            const el = document.querySelector(sel);
+            el.value = val;
+            el.dispatchEvent(new Event('input', { bubbles: true }));
+            el.dispatchEvent(new Event('change', { bubbles: true }));
+        }, selector, value);
+
+        const packageIds = await remote.$$eval('.package', l => l.map(e => e.dataset.package));
+        log('Pakete:', packageIds);
+        check(packageIds.length === 6 && packageIds.includes('temu'), 'Pakete fehlen auf der Einstellungsseite');
+        await clickAt(remote, '[data-package="temu"] .packageView');
+        await sleep(300);
+        const choices = await remote.$$eval('[data-package="temu"] input.packageAlt', l => l.map(e => [e.value, e.checked]));
+        log('Temu, Vorauswahl:', JSON.stringify(choices));
+        check(choices.length === 4 && choices.every(c => c[1]), 'Vorschau des Temu-Pakets falsch (Sprache de: alle vorausgewählt)');
+        await clickAt(remote, '[data-package="temu"] input.packageAlt[value="https://www.genialokal.de/"]');
+        await clickAt(remote, '[data-package="temu"] .packageApply');
+        await sleep(500);
+        const temu = await entryOf('temu.com');
+        log('Temu übernommen:', JSON.stringify(temu));
+        check(temu?.reminder === 'Billig kostet am Ende mehr.' && temu.avoidLevels.join() === '1,1,1,1'
+              && temu.alternatives.length === 3 && !temu.alternatives.some(a => a.url.includes('genialokal')),
+              'Temu-Paket falsch übernommen');
+        check(await remote.$eval('[data-package="temu"]', e => e.classList.contains('adopted')), 'Paket nicht als übernommen markiert');
+
+        await setValue('#newDomain', 'kein domain');
+        await clickAt(remote, '#addEntry');
+        await sleep(200);
+        check(await remote.$eval('#newDomainWarning', e => getComputedStyle(e).display !== 'none'), 'Ungültige Domain ohne Warnung');
+        await setValue('#newDomain', 'https://www.beispiel.at/irgendwas');
+        await setValue('#newReminder', 'Zu teuer.');
+        await clickAt(remote, '#addEntry');
+        await sleep(500);
+        check((await entryOf('beispiel.at'))?.reminder === 'Zu teuer.', 'Seite nicht von Hand hinzugefügt');
+
+        const row = '[data-domain="beispiel.at"]';
+        await setValue(`${row} .altUrl`, 'https://gut.at/');
+        await setValue(`${row} .altClaim`, 'Besser');
+        await clickAt(remote, `${row} .altAdd`);
+        await sleep(500);
+        check((await entryOf('beispiel.at')).alternatives.some(a => a.url === 'https://gut.at/' && a.claim === 'Besser'), 'Alternative nicht hinzugefügt');
+        await clickAt(remote, `${row} .altRemove`);
+        await sleep(500);
+        check((await entryOf('beispiel.at')).alternatives.length === 0, 'Alternative nicht entfernt');
+        await remote.select(`${row} select.level[data-role="0"]`, '3');
+        await sleep(400);
+        check((await entryOf('beispiel.at')).avoidLevels[0] === 3, 'Störstärke nicht geändert');
+        await setValue(`${row} .entryReminder`, 'Viel zu teuer.');
+        await sleep(400);
+        check((await entryOf('beispiel.at')).reminder === 'Viel zu teuer.', 'Erinnerung nicht geändert');
+        await clickAt(remote, `${row} .entryUnavoid`);
+        await sleep(500);
+        check((await entryOf('beispiel.at')).reminder === undefined, 'Freigeben funktioniert nicht');
+        await clickAt(remote, `${row} .entryReavoid`);
+        await sleep(500);
+        check((await entryOf('beispiel.at')).reminder !== undefined, 'Wieder vermeiden funktioniert nicht');
+        await clickAt(remote, `${row} .entryDelete`);
+        await sleep(500);
+        check((await entryOf('beispiel.at')) === undefined, 'Löschen funktioniert nicht');
+
+        const exported = JSON.parse(await remote.evaluate(() => buildExport()));
+        log('Export:', exported.format, Object.keys(exported.entries).length, 'Einträge');
+        check(exported.format === 'shapemyweb-list' && exported.entries['temu.com'], 'Export unvollständig');
+        const importFile = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'smw-')), 'liste.json');
+        fs.writeFileSync(importFile, JSON.stringify({ format: 'shapemyweb-list', version: 1,
+            entries: { 'import.at': { reminder: 'Importiert.', avoidLevels: [2, 2, 2, 2], subDomains: [], alternatives: [] } } }));
+        await (await remote.$('#importFile')).uploadFile(importFile);
+        await sleep(800);
+        log('Import:', await remote.$eval('#importResult', e => e.textContent));
+        check((await entryOf('import.at'))?.reminder === 'Importiert.', 'Import funktioniert nicht');
+        fs.writeFileSync(importFile, '{"irgendwas": true}');
+        await (await remote.$('#importFile')).uploadFile(importFile);
+        await sleep(500);
+        check(await remote.$eval('#importResult', e => e.classList.contains('error')), 'Ungültige Importdatei ohne Fehlermeldung');
 
         // 6. Blockieren funktioniert auch, nachdem Chromium den Service Worker beendet hat
         await send({ type: 'actualize-AO', avoid: { domain: 'spiel.de', reminder: 'Später!', avoidLevels: [3, 3, 3, 3] } });

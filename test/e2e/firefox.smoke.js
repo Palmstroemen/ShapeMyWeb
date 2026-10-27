@@ -139,9 +139,18 @@ const openExtensionPage = (page, file) => page.goto(extUrl + file, { timeout: 30
         check(await popup.$('#buttonR0') !== null, 'Toolbar im Popup fehlt');
         await remote.reload({ timeout: 3000 }).catch(() => {});
         await sleep(500);
-        const listed = await remote.$$eval('#domainlist li strong', l => l.map(e => e.textContent));
+        const listed = await remote.$$eval('.entryDomain', l => l.map(e => e.textContent));
         log('Setup-Liste:', listed);
         check(listed.includes('example.com') && listed.includes('news.net'), 'Setup-Liste unvollständig');
+
+        // Schnellstart-Paket übernehmen
+        await remote.evaluate(() => document.querySelector('[data-package="youtube"] .packageView').click());
+        await sleep(300);
+        await remote.evaluate(() => document.querySelector('[data-package="youtube"] .packageApply').click());
+        await sleep(800);
+        const youtube = (await send({ type: 'getBlacklist' })).blacklist['youtube.com'];
+        log('YouTube-Paket:', youtube?.reminder, youtube?.alternatives.map(a => a.name));
+        check(youtube?.reminder && youtube.alternatives.length > 0, 'Paket in Firefox nicht übernommen');
     } finally {
         await browser.close();
         server.close();

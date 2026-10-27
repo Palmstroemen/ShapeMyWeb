@@ -9,6 +9,12 @@ alternativen Webseiten, die du stattdessen besuchen möchtest.
 
 ## Funktionen
 
+- **Schnellstart-Pakete:** fertige Erinnerungen und Alternativen für Amazon, Temu,
+  YouTube, Google-Suche, Google Maps und soziale Netzwerke, mit einem Klick übernommen
+  (Einstellungen → Schnellstart).
+- **Verwaltung:** in den Einstellungen Seiten hinzufügen, Erinnerung, Störstärken und
+  Alternativen ändern, freigeben, löschen. Die ganze Liste lässt sich als Datei
+  exportieren und wieder importieren.
 - **Seite vermeiden:** im Popup auf das Stoppschild klicken oder in der
   Adresszeile `avoid`, Leertaste und Enter eingeben.
 - **Teilbereiche:** nur bestimmte Bereiche einer Seite sperren
@@ -53,6 +59,7 @@ npm run test:e2e         # Smoke-Tests in Chromium und Firefox (ca. 1–2 Minute
 npm run lint             # Firefox-Linter (web-ext)
 npm run build            # ZIP für Chrome Web Store / addons.mozilla.org nach dist/
 npm run store-assets     # Store-Screenshots und Werbekachel nach docs/store/ (de, en)
+npm run check-links      # Sind alle Alternativen der Schnellstart-Pakete erreichbar? (vor jedem Release)
 ```
 
 Pfade zu den Browsern lassen sich mit `CHROME_PATH` und `FIREFOX_PATH` setzen.

@@ -1,49 +1,65 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>ShapeMyWeb</title>
-    <meta name="description" content="Die Setup-Seite, die vom Popup-Script aufgerufen wird.">
-    <link href="smw-style.css" type="text/css" rel="stylesheet">
-    <style>
-        #domainlist { list-style-type: none; margin: 0; padding: 0; width: 60%; }
-        #domainlist li { margin: 3px; padding: 0.4em; font-size: 1.4em; }
-        #domainlist li.inactive { color: grey; }
-        #domainlist .details { font-size: 0.6em; color: grey; }
-        #designSetup { margin: 16px 0 24px; }
-        #designSetup label { margin-right: 24px; font-size: 1.1em; }
-    </style>
+    <meta name="description" content="Die Einstellungsseite: Darstellung, Pakete, vermiedene Webseiten, Export und Import.">
+    <link href="setup.css" type="text/css" rel="stylesheet">
     <script src="libraries/globalFunctions.js"></script>
     <script src="libraries/localize.js"></script>
+    <script src="libraries/packages.js"></script>
     <script src="smw-setup.js"></script>
 </head>
 
 <body>
-    <header>
-        <div style="border-bottom: 1px solid lightgrey">
-            <table style="margin-bottom: 0">
-                <tr style="vertical-align: middle">
-                    <td style="vertical-align: top">
-                        <img src="images/icon-32.png" alt="No Entry Sign">
-                    </td>
-                    <td>
-                        <h2 style="margin-bottom: 0"> Shape My Web </h2>
-                    </td>
-                </tr>
-            </table>
-        </div>
-    </header>
-    <div>
+    <main>
+        <header>
+            <img src="images/icon-48.png" alt="" width="40" height="40">
+            <div>
+                <h1>ShapeMyWeb</h1>
+                <p class="muted" lang="S001">Settings</p>
+            </div>
+        </header>
+
         <section id="designSetup">
             <h2 lang="D010">Appearance</h2>
-            <label><input type="radio" name="design" id="setupDesignClassic" value="classic"> <span lang="D011">Stop sign</span></label>
-            <label><input type="radio" name="design" id="setupDesignCalm" value="calm"> <span lang="D012">Calm</span></label>
+            <div class="row">
+                <label><input type="radio" name="design" id="setupDesignClassic" value="classic"> <span lang="D011">Funny</span></label>
+                <label><input type="radio" name="design" id="setupDesignCalm" value="calm"> <span lang="D012">Professional</span></label>
+            </div>
         </section>
-        <h1 lang="D013">Avoided Websites</h1>
-        <ol id="domainlist"></ol>
-    </div>
+
+        <section id="packages">
+            <h2 lang="S010">Quick start</h2>
+            <p class="muted" lang="S011">Ready-made packs.</p>
+            <div id="packageList"></div>
+            <p class="muted small" lang="S019">Added with avoid level 1.</p>
+        </section>
+
+        <section>
+            <h2 lang="D013">Avoided websites</h2>
+            <form id="newEntry" class="newEntry">
+                <input id="newDomain" type="text" autocomplete="off" spellcheck="false">
+                <input id="newReminder" type="text" autocomplete="off">
+                <button id="addEntry" type="submit" class="primary" lang="S023">Add</button>
+            </form>
+            <p id="newDomainWarning" class="warning" lang="S024">That is not a valid website.</p>
+            <div id="domainlist"></div>
+        </section>
+
+        <section>
+            <h2 lang="S033">Back up and share</h2>
+            <p class="muted" lang="S034">Save your list as a file.</p>
+            <div class="row">
+                <button id="exportList" type="button" lang="S035">Export</button>
+                <label class="button" for="importFile"><span lang="S036">Import</span></label>
+                <input id="importFile" type="file" accept=".json,application/json" hidden>
+            </div>
+            <p id="importResult" class="small"></p>
+        </section>
+    </main>
 </body>
 
 </html>
