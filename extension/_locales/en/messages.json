@@ -75,5 +75,16 @@
 "W040": { "message": "Your data stays with you" },
 "W041": { "message": "ShapeMyWeb collects no data and sends nothing to us. Your list is only stored in your browser and – if you use your browser's sync – kept in sync between your devices." },
 "W050": { "message": "You can always find this page again via the question mark in the menu." },
+"D001": { "message": "You decided not to use" },
+"D002": { "message": "anymore." },
+"D003": { "message": "Instead" },
+"D004": { "message": "Continue anyway" },
+"D005": { "message": "Pause for a while" },
+"D006": { "message": "Stop avoiding" },
+"D007": { "message": "Edit" },
+"D010": { "message": "Appearance" },
+"D011": { "message": "Stop sign" },
+"D012": { "message": "Calm" },
+"D013": { "message": "Avoided websites" },
 "end": { "message": "end"}
 }

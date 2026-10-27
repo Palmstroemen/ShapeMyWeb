@@ -12,8 +12,11 @@
         #domainlist li { margin: 3px; padding: 0.4em; font-size: 1.4em; }
         #domainlist li.inactive { color: grey; }
         #domainlist .details { font-size: 0.6em; color: grey; }
+        #designSetup { margin: 16px 0 24px; }
+        #designSetup label { margin-right: 24px; font-size: 1.1em; }
     </style>
     <script src="libraries/globalFunctions.js"></script>
+    <script src="libraries/localize.js"></script>
     <script src="smw-setup.js"></script>
 </head>
 
@@ -33,7 +36,12 @@
         </div>
     </header>
     <div>
-        <h1>Avoided Websites</h1>
+        <section id="designSetup">
+            <h2 lang="D010">Appearance</h2>
+            <label><input type="radio" name="design" id="setupDesignClassic" value="classic"> <span lang="D011">Stop sign</span></label>
+            <label><input type="radio" name="design" id="setupDesignCalm" value="calm"> <span lang="D012">Calm</span></label>
+        </section>
+        <h1 lang="D013">Avoided Websites</h1>
         <ol id="domainlist"></ol>
     </div>
 </body>

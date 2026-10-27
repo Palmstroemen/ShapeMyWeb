@@ -43,6 +43,8 @@ console.log("SIGN: Success.");
         signtag = document.getElementById('sign');
         shield = document.getElementById('signBackground');
         d  = parseInt(getComputedStyle(signtag).getPropertyValue('--d'));
+        alignEyesToLetters();
+        document.fonts.ready.then(alignEyesToLetters);
         alternativesarea = document.getElementById('alternativesArea');
         displayMode = 'normal';
         window.addEventListener('mousemove', mimic);
@@ -58,6 +60,27 @@ console.log("SIGN: Retry later.");
         setTimeout(activateFaceMimics, 34);
     }
 };
+
+
+// Die Augen sitzen auf den beiden O von "DO NOT". Wo die O stehen, hängt von der Schrift ab
+// (Arial Black gibt es nicht auf jedem System), deshalb wird nachgemessen statt fest positioniert.
+// Ohne Messung gelten die Werte aus sign.css: Augenmitte bei 0.37 bzw. 0.655 der Schildbreite.
+var eyeShiftL = 0;
+var eyeShiftR = 0;
+
+function alignEyesToLetters() {
+    let os = document.querySelectorAll('#doNot .signO');
+    if (os.length != 2 || !signtag || !d) return;
+    // offsetLeft ignoriert die Einblend-Animation (transform) und misst das fertige Layout.
+    let marginLeft = parseFloat(getComputedStyle(document.getElementById('doNot')).marginLeft);
+    let eyesWidth  = d * 0.11;
+    let centers    = [...os].map(o => marginLeft + o.offsetLeft + o.offsetWidth / 2);
+    signtag.style.setProperty('--eyeLeftX',  (centers[0] - eyesWidth / 2) + 'px');
+    signtag.style.setProperty('--eyeRightX', (centers[1] - eyesWidth / 2) + 'px');
+    eyeShiftL = centers[0] / d - 0.37;
+    eyeShiftR = centers[1] / d - 0.655;
+    if (x !== undefined) setPupillen();
+}
 
 
 let signButtonsInitialized = false;
@@ -191,11 +214,11 @@ function setPupillen() {
     pY = pY + 'px';
     signtag.style.setProperty('--pupY', pY);
 
-    pL = d * ((pupL - (pupL - xp) * 0.05 )/2 + 0.46); 
+    pL = d * ((pupL - (pupL - xp) * 0.05 )/2 + 0.46 + eyeShiftL); 
     pL = pL + 'px';
     signtag.style.setProperty('--pupLeftX', pL);
 
-    pR = d * ((pupR - (pupR - xp) * 0.05 )/2 + 0.5); 
+    pR = d * ((pupR - (pupR - xp) * 0.05 )/2 + 0.5 + eyeShiftR); 
     pR = pR + 'px';
     signtag.style.setProperty('--pupRightX', pR);
 };

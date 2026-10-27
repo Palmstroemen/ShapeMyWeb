@@ -89,6 +89,24 @@ const openExtensionPage = (page, file) => page.goto(extUrl + file, { timeout: 30
         log('Nach Pass-by ->', await urlOf(page));
         check((await urlOf(page)).startsWith('http://example.com'), 'Pass-by hat nicht navigiert');
 
+        // 2b. Ruhiges Design
+        const settings = (await send({ type: 'getSettings' })).settings;
+        await send({ type: 'saveSettings', settings: { ...settings, design: 'calm' } });
+        await send({ type: 'actualize-AO', avoid: { domain: 'ruhig.at', reminder: 'Lieber etwas Gutes.', avoidLevels: [2, 2, 2, 2],
+            alternatives: [{ url: 'http://manufaktur.at/', name: 'manufaktur.at', claim: 'Gute Dinge' }] } });
+        const calm = await browser.newPage();
+        watch(calm, 'ruhig');
+        await calm.goto(`http://ruhig.at:${port}/`, { timeout: 5000 }).catch(() => {});
+        await sleep(2000);
+        const view = await calm.evaluate(() => ({
+            calmVisible: getComputedStyle(document.getElementById('calmView')).display !== 'none',
+            reminder:    document.getElementById('calmReminder').textContent,
+            cards:       document.querySelectorAll('#calmAlternatives a').length
+        }));
+        log('Ruhiges Design:', JSON.stringify(view));
+        check(view.calmVisible && view.reminder === 'Lieber etwas Gutes.' && view.cards === 1, 'Ruhiges Design fehlerhaft');
+        await send({ type: 'saveSettings', settings: { ...settings, design: 'classic' } });
+
         // 3. Nicht gelistete Seite
         const free = await browser.newPage();
         await free.goto(`http://frei.org:${port}/`);

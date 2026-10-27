@@ -17,6 +17,12 @@ function check(condition, message) {
     if (!condition) throw new Error(message);
 }
 
+async function clickAt(page, selector) {
+    // page.click() hängt auf der Setup-Seite (Puppeteer); ein echter Mausklick funktioniert.
+    const box = await (await page.$(selector)).boundingBox();
+    await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
+}
+
 function watch(page, name) {
     page.on('pageerror', e => errors.push(`${name}: ${e.message}`));
     page.on('console', m => {
@@ -85,6 +91,18 @@ function watch(page, name) {
         const icon = await page.$eval('#alternativesArea img.icon', e => e.getAttribute('src'));
         log('Icon der Alternative:', icon);
         check(icon === 'https://orf.at/favicon.ico', 'Icon soll direkt von der Alternative kommen, nicht von einem Drittanbieter');
+        // Die Augen sitzen genau auf den beiden O von "DO NOT", egal mit welcher Schrift
+        await page.mouse.move(700, 300);
+        await sleep(1000);
+        const eyeOffsets = await page.evaluate(() => {
+            const center = el => { const r = el.getBoundingClientRect(); return r.left + r.width / 2; };
+            const os = [...document.querySelectorAll('#doNot .signO')];
+            if (os.length !== 2) return null;
+            return [center(document.getElementById('eyeLeft')) - center(os[0]),
+                    center(document.getElementById('eyeRight')) - center(os[1])];
+        });
+        log('Abstand Auge zu O (px):', eyeOffsets);
+        check(eyeOffsets && eyeOffsets.every(dx => Math.abs(dx) < 3), 'Augen sitzen nicht auf den O von DO NOT');
 
         // 2. Nicht gelistete Seite
         const free = await browser.newPage();
@@ -99,6 +117,47 @@ function watch(page, name) {
         await sleep(1500);
         log('Nach Pass-by ->', page.url());
         check(page.url().startsWith('http://example.com'), 'Pass-by hat nicht navigiert');
+
+        // 3b. Ruhiges Design
+        const settings = (await send({ type: 'getSettings' })).settings;
+        await send({ type: 'saveSettings', settings: { ...settings, design: 'calm' } });
+        await send({ type: 'actualize-AO', avoid: {
+            domain: 'ruhig.at', reminder: 'Lieber etwas Gutes.', avoidLevels: [2, 2, 2, 2],
+            alternatives: [{ url: 'http://manufaktur.at/', name: 'manufaktur.at', claim: 'Gute Dinge', color: 'hsl(30, 50%, 70%)' }]
+        } });
+        const calm = await browser.newPage();
+        watch(calm, 'ruhig');
+        await calm.goto(`http://ruhig.at:${port}/`).catch(() => {});
+        await sleep(1500);
+        const view = await calm.evaluate(() => ({
+            calmVisible:    getComputedStyle(document.getElementById('calmView')).display !== 'none',
+            classicVisible: getComputedStyle(document.querySelector('.wrapper')).display !== 'none',
+            reminder:       document.getElementById('calmReminder')?.textContent,
+            domain:         document.getElementById('calmDomain')?.textContent,
+            cards:          [...document.querySelectorAll('#calmAlternatives a')].map(a => [a.href, a.textContent]),
+            pending:        document.body.classList.contains('pending')
+        }));
+        log('Ruhiges Design:', JSON.stringify(view));
+        check(view.calmVisible && !view.classicVisible, 'Ruhiges Design wird nicht angezeigt');
+        check(!view.pending, 'Seite bleibt unsichtbar');
+        check(view.reminder === 'Lieber etwas Gutes.' && view.domain === 'ruhig.at', 'Erinnerung oder Domain fehlt');
+        check(view.cards.length === 1 && view.cards[0][0] === 'http://manufaktur.at/' && view.cards[0][1].includes('Gute Dinge'), 'Alternative fehlt');
+        await calm.click('#calmPassby');
+        await sleep(1500);
+        log('Ruhig: Trotzdem weiter ->', calm.url());
+        check(calm.url().startsWith('http://ruhig.at'), 'Trotzdem weiter funktioniert im ruhigen Design nicht');
+
+        // Umschalter in den Einstellungen
+        await calm.goto(extUrl + 'showstopper.html?url=' + encodeURIComponent(`http://ruhig.at:${port}/`));
+        await sleep(1500);
+        await calm.evaluate(() => document.getElementById('designClassic').click());
+        await sleep(300);
+        check((await send({ type: 'getSettings' })).settings.design === 'classic', 'Umschalter speichert das Design nicht');
+        await calm.reload();
+        await sleep(1500);
+        check(await calm.evaluate(() => getComputedStyle(document.getElementById('calmView')).display === 'none'),
+              'Nach dem Umschalten wird noch das ruhige Design gezeigt');
+        await calm.close();
 
         // 4. Neue Seite vermeiden (Editmode) und bestätigen
         const edit = await browser.newPage();
@@ -133,6 +192,17 @@ function watch(page, name) {
         const listed = await remote.$$eval('#domainlist li strong', l => l.map(e => e.textContent));
         log('Setup-Liste:', listed);
         check(listed.includes('example.com') && listed.includes('news.net'), 'Setup-Liste unvollständig');
+        const radios = await remote.evaluate(() => [
+            document.getElementById('setupDesignClassic')?.checked,
+            document.getElementById('setupDesignCalm')?.checked
+        ]);
+        log('Setup-Seite, Darstellung (Stoppschild, ruhig):', radios);
+        check(radios[0] === true && radios[1] === false, 'Setup-Seite zeigt den Design-Umschalter nicht richtig an');
+        await clickAt(remote, '#setupDesignCalm');
+        await sleep(300);
+        check((await send({ type: 'getSettings' })).settings.design === 'calm', 'Setup-Seite speichert das Design nicht');
+        await clickAt(remote, '#setupDesignClassic');
+        await sleep(300);
 
         // 6. Blockieren funktioniert auch, nachdem Chromium den Service Worker beendet hat
         await send({ type: 'actualize-AO', avoid: { domain: 'spiel.de', reminder: 'Später!', avoidLevels: [3, 3, 3, 3] } });
