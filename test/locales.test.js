@@ -45,7 +45,7 @@ test('jedes lang-Attribut in den Seiten hat eine Übersetzung', () => {
     const extDir = path.join(localesDir, '..');
     for (const file of fs.readdirSync(extDir).filter(f => f.endsWith('.html'))) {
         const html = fs.readFileSync(path.join(extDir, file), 'utf8');
-        for (const [, key] of html.matchAll(/\blang=['"](L\d+|W\d+)['"]/g)) {
+        for (const [, key] of html.matchAll(/\blang=['"]([A-Z]\d+)['"]/g)) {
             assert.ok(messages.en[key], `${file}: ${key} fehlt in en`);
         }
     }

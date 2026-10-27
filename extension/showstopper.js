@@ -139,7 +139,10 @@ console.log("SST: --- und übersetzt");
     installSetupShowRoleCheckbox(1);
     installSetupShowRoleCheckbox(2);
     installSetupShowRoleCheckbox(3);
-    
+    installSetupDesignRadios();
+    initCalmButtons();
+    // Falls der Background nicht antwortet, die Seite trotzdem zeigen.
+    setTimeout(function () { document.body.classList.remove('pending'); }, 1500);
 });
 
 
@@ -223,6 +226,8 @@ function setSettings() {
     setCheckbox('showRole1', settings.showRole[1]);
     setCheckbox('showRole2', settings.showRole[2]);
     setCheckbox('showRole3', settings.showRole[3]);
+    setCheckbox('designCalm', settings.design == 'calm');
+    setCheckbox('designClassic', settings.design != 'calm');
 }
 
 
@@ -303,6 +308,7 @@ console.log("SST: setDisplayMode", mode, reminder);
         }
 
         showDomainInfo(displayMode);
+        applyDesign();
 
     } else {
         setTimeout(function () { setDisplayMode(mode); }, 28);
@@ -626,5 +632,81 @@ function actualizeSmallButtons() {
         document.getElementById('buttonUnavoid').style.display = disp;
         document.getElementById('buttonPassby').style.display  = disp;
         document.getElementById('buttonPause2').style.display  = disp;    
+        // Ruhiges Design: bei Störstärke 3 gibt es kein "trotzdem weiter"
+        let calmDisp = (disp == 'none') ? 'none' : '';
+        document.getElementById('calmUnavoid').style.display = calmDisp;
+        document.getElementById('calmPassby').style.display  = calmDisp;
+        document.getElementById('calmPause').style.display   = calmDisp;
     }
+}
+
+
+function installSetupDesignRadios() {
+    for (let radio of document.querySelectorAll('input[name="design"]')) {
+        radio.addEventListener('change', function () {
+            settings.design = this.value;
+            chrome.runtime.sendMessage({
+                type: 'saveSettings',
+                settings: settings
+            });
+        });
+    }
+}
+
+
+function initCalmButtons() {
+    // Dieselben Aktionen wie die Knöpfe am Stoppschild (sign.js)
+    document.getElementById('calmPassby').addEventListener('click', passbyClicked);
+    document.getElementById('calmPause').addEventListener('click', pauseClicked);
+    document.getElementById('calmUnavoid').addEventListener('click', unavoidClicked);
+    document.getElementById('calmSetup').addEventListener('click', changeToSetup);
+}
+
+
+function applyDesign() {
+    // Das ruhige Design ersetzt nur die normale Ansicht; bearbeitet wird immer im gewohnten Layout.
+    let calm = (settings.design == 'calm') && (displayMode == 'normal');
+    document.getElementById('calmView').style.display = calm ? 'flex' : 'none';
+    document.querySelector('.wrapper').style.display  = calm ? 'none' : '';
+    document.body.classList.toggle('calm', calm);
+    if (calm) renderCalm();
+    document.body.classList.remove('pending');
+}
+
+
+function renderCalm() {
+    document.getElementById('calmDomain').textContent   = avoidDomain;
+    document.getElementById('calmReminder').textContent = reminder;
+
+    let list = document.getElementById('calmAlternatives');
+    list.replaceChildren();
+    for (let alternative of alternatives) {
+        if (!isWebUrl(alternative.url)) continue;
+        let card = document.createElement('a');
+        card.className = 'calmCard';
+        card.href = alternative.url;
+        if (alternative.color) card.style.borderLeftColor = alternative.color;
+
+        let icon = document.createElement('img');
+        icon.className = 'calmIcon';
+        icon.alt = '';
+        icon.src = 'https://' + splitUrl(alternative.url)[0] + '/favicon.ico';
+        icon.addEventListener('error', function () { icon.remove(); });   // Seite ohne Favicon: keine Lücke
+
+        let name = document.createElement('span');
+        name.className = 'calmName';
+        name.textContent = alternative.name;
+
+        let claim = document.createElement('span');
+        claim.className = 'calmClaim';
+        claim.textContent = alternative.claim || '';
+
+        let text = document.createElement('span');
+        text.className = 'calmText';
+        text.append(name, claim);
+
+        card.append(icon, text);
+        list.append(card);
+    }
+    document.getElementById('calmAlternativesSection').style.display = list.children.length ? '' : 'none';
 }

@@ -100,6 +100,47 @@ function watch(page, name) {
         log('Nach Pass-by ->', page.url());
         check(page.url().startsWith('http://example.com'), 'Pass-by hat nicht navigiert');
 
+        // 3b. Ruhiges Design
+        const settings = (await send({ type: 'getSettings' })).settings;
+        await send({ type: 'saveSettings', settings: { ...settings, design: 'calm' } });
+        await send({ type: 'actualize-AO', avoid: {
+            domain: 'ruhig.at', reminder: 'Lieber etwas Gutes.', avoidLevels: [2, 2, 2, 2],
+            alternatives: [{ url: 'http://manufaktur.at/', name: 'manufaktur.at', claim: 'Gute Dinge', color: 'hsl(30, 50%, 70%)' }]
+        } });
+        const calm = await browser.newPage();
+        watch(calm, 'ruhig');
+        await calm.goto(`http://ruhig.at:${port}/`).catch(() => {});
+        await sleep(1500);
+        const view = await calm.evaluate(() => ({
+            calmVisible:    getComputedStyle(document.getElementById('calmView')).display !== 'none',
+            classicVisible: getComputedStyle(document.querySelector('.wrapper')).display !== 'none',
+            reminder:       document.getElementById('calmReminder')?.textContent,
+            domain:         document.getElementById('calmDomain')?.textContent,
+            cards:          [...document.querySelectorAll('#calmAlternatives a')].map(a => [a.href, a.textContent]),
+            pending:        document.body.classList.contains('pending')
+        }));
+        log('Ruhiges Design:', JSON.stringify(view));
+        check(view.calmVisible && !view.classicVisible, 'Ruhiges Design wird nicht angezeigt');
+        check(!view.pending, 'Seite bleibt unsichtbar');
+        check(view.reminder === 'Lieber etwas Gutes.' && view.domain === 'ruhig.at', 'Erinnerung oder Domain fehlt');
+        check(view.cards.length === 1 && view.cards[0][0] === 'http://manufaktur.at/' && view.cards[0][1].includes('Gute Dinge'), 'Alternative fehlt');
+        await calm.click('#calmPassby');
+        await sleep(1500);
+        log('Ruhig: Trotzdem weiter ->', calm.url());
+        check(calm.url().startsWith('http://ruhig.at'), 'Trotzdem weiter funktioniert im ruhigen Design nicht');
+
+        // Umschalter in den Einstellungen
+        await calm.goto(extUrl + 'showstopper.html?url=' + encodeURIComponent(`http://ruhig.at:${port}/`));
+        await sleep(1500);
+        await calm.evaluate(() => document.getElementById('designClassic').click());
+        await sleep(300);
+        check((await send({ type: 'getSettings' })).settings.design === 'classic', 'Umschalter speichert das Design nicht');
+        await calm.reload();
+        await sleep(1500);
+        check(await calm.evaluate(() => getComputedStyle(document.getElementById('calmView')).display === 'none'),
+              'Nach dem Umschalten wird noch das ruhige Design gezeigt');
+        await calm.close();
+
         // 4. Neue Seite vermeiden (Editmode) und bestätigen
         const edit = await browser.newPage();
         watch(edit, 'editmode');

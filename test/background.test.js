@@ -256,3 +256,25 @@ test('Das Popup kann die Willkommensseite erneut öffnen', async () => {
     await bg.send({ type: 'welcome' });
     assert.deepEqual(bg.tabs.created, [extensionUrl + 'welcome.html']);
 });
+
+// Design ...................................................................
+
+test('Standard-Design ist das Stoppschild', async () => {
+    const bg = loadBackground();
+    assert.equal((await bg.send({ type: 'getSettings' })).settings.design, 'classic');
+});
+
+test('Das gewählte Design wird gespeichert und synchronisiert', async () => {
+    const bg = loadBackground();
+    const { settings } = await bg.send({ type: 'getSettings' });
+    await bg.send({ type: 'saveSettings', settings: { ...settings, design: 'calm' } });
+    assert.equal((await bg.send({ type: 'getSettings' })).settings.design, 'calm');
+    assert.equal(bg.chrome.storage.sync.data.design, 'calm');
+});
+
+test('Ein unbekanntes Design fällt auf das Stoppschild zurück', async () => {
+    const bg = loadBackground();
+    const { settings } = await bg.send({ type: 'getSettings' });
+    await bg.send({ type: 'saveSettings', settings: { ...settings, design: 'neon' } });
+    assert.equal((await bg.send({ type: 'getSettings' })).settings.design, 'classic');
+});

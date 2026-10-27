@@ -12,6 +12,7 @@
     <link href="popup.css" type="text/css" rel="stylesheet">
     <link href="sign.css" type="text/css" rel="stylesheet">
     <link href="showstopper.css" type="text/css" rel="stylesheet">
+    <link href="calm.css" type="text/css" rel="stylesheet">
 
     <script src="./libraries/globalFunctions.js"></script>
     <script src="./libraries/localize.js"></script>
@@ -22,7 +23,30 @@
 </head>
 
 
-<body class="container">
+<body class="container pending">
+    <!-- Ruhiges Design: ersetzt die normale Ansicht, bearbeitet wird im gewohnten Layout darunter -->
+    <main id="calmView" style="display: none">
+        <div class="calmInner">
+            <div class="calmBrand"><img src="images/icon-48.png" alt="">ShapeMyWeb</div>
+            <p class="calmIntro">
+                <span lang="D001">You decided not to use</span>
+                <strong id="calmDomain"></strong>
+                <span lang="D002">anymore.</span>
+            </p>
+            <blockquote id="calmReminder"></blockquote>
+            <section id="calmAlternativesSection" class="calmSection">
+                <h2 lang="D003">Instead</h2>
+                <div id="calmAlternatives"></div>
+            </section>
+            <nav class="calmActions">
+                <button id="calmPassby" lang="D004">Continue anyway</button>
+                <button id="calmPause" lang="D005">Pause for a while</button>
+                <button id="calmUnavoid" lang="D006">Stop avoiding</button>
+                <button id="calmSetup" lang="D007">Edit</button>
+            </nav>
+        </div>
+    </main>
+
     <div class="wrapper">
         <div class='box infoBox'>
             <div class="infoBoxSegment">
@@ -90,6 +114,13 @@
                         <input type="image" src="images/Setup-32.png" alt="Role Person Button" id="buttonSyncedSettings" style='float: right'>
                     </div>
                     <div id='syncedSettings' style='clear:right'>
+                        <div class="edit" id="designSetup" style="padding-bottom: 5px">
+                            <strong lang='D010'>Appearance</strong>
+                            <div>
+                                <label><input type="radio" name="design" id="designClassic" value="classic"> <span lang='D011'>Stop sign</span></label>
+                                <label><input type="radio" name="design" id="designCalm" value="calm"> <span lang='D012'>Calm</span></label>
+                            </div>
+                        </div>
                         <div class="edit" id="doNotEnterSetup" style="padding-bottom: 5px">
                             <input type="checkbox" id="showDoNotEnter">
                             <span lang='L070'>show "DO NOT ENTER"</span>
