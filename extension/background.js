@@ -1,772 +1,418 @@
-console.log("BAC: background.js started");
+// Hintergrundprozess der Extension (Manifest V3).
+// Chrome startet dieses Script als Service Worker, Firefox als Event Page.
+// Beide werden vom Browser nach kurzer Untätigkeit beendet. Deshalb steht hier
+// KEIN Zustand in globalen Variablen: Blacklist, Rolle, Pause usw. liegen in
+// chrome.storage und werden bei jedem Ereignis frisch gelesen.
+//
+// Speicheraufteilung:
+//   storage.sync    (über alle Geräte gesynct)  Blacklist-Einträge "bl:<domain>", globale Settings
+//   storage.local   (pro Gerät)                 aktive Rolle, Pausezeit, Wiederaufwachzeit
+//   storage.session (bis zum Browserende)       temporäre Whitelist
 
-let textOpacityDebug = 0;
-const blockWebsite = "./showstopper.html";
-
-var paused = false;
-var resultFromBL = {};
-
-var myExtensionId = chrome.runtime.id;
-
-var settings = {textOpacity: 0.7, showRole: [ true, true, true, true ], pauseTime: 10};
-
-var bl = {};
-var tempWhitelist = {};
-var myWindow;
-var myDocument;
-let tempAO;
-
-var url;
-var avoidDomain;
-var reminder;
-let alternatives;
-  
-var rewakeTime;
-var activeRole = 1;
-var keywordList = ["avoid", "block", "stop"];
-var textOpacity = 0.7;
-
-
-
-
-// Eventlisteners
-chrome.webNavigation.onHistoryStateUpdated.addListener(checkWebsite);
-chrome.webRequest.onBeforeRequest.addListener(checkWebsite, 
-    { urls: ["<all_urls>"], types: ['main_frame'] }, ["blocking"] );
-//chrome.omnibox.onInputStarted.addListener(function(text) {
-// Damit könnte man in der Omnibox direkt etwas eingeben. Funktioniert aber noch nicht gescheit.
-//    chrome.omnibox.setDefaultSuggestion();{description: "You can avoid this site."}
-//})
-
-
-
-// Initialisierung, liest Daten aus dem lokalen Speicher aus
-// FÜr den  Pause-Mode gibt's eine Wiederaufwachzeit.
-try {
-    chrome.storage.local.get(['rewake'], function(res) {
-        var storedTime = res.rewake;
-        if (storedTime == undefined) {storedTime = 0;}
-        rewakeTime     = storedTime;
-            var time = new Date().getTime();
-        if (time < rewakeTime) { console.log("BAC: Service aktuell pausiert", rewakeTime-time);}
-        else                   { console.log("BAC: Service aktuell nicht pausiert");}
-    });    
-}
-catch(error) {
-    console.log('BAC: ERROR at crome.storage.local.get: ',error);  
-    rewakeTime = 0;
+if (typeof importScripts === 'function' && typeof splitUrl === 'undefined') {
+    // Im Chrome Service Worker. In Firefox lädt das Manifest globalFunctions.js mit.
+    importScripts('libraries/globalFunctions.js');
 }
 
-// Die aktiveRolle wird auf dem Gerät und nicht in der Cloud gespeichert.
-// so kann jedes Gerät eine andere aktive Rolle haben.
-// z.B. Firmencomputer, Homecomputer, Tablet, ...
-getRole();
-
-loadSettings();
-
-/////////////////////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////////////////////
-//(function()     
-// dieser spezielle Funktionsaufruf führt dazu, dass diese Funktion SOFORT schon
-// beim Laden des Dokumentes ausgeführt wird.
- 
-// Bin noch nicht sicher, ob das erforderlich ist.
-// Es ist der Versuch die MessageListener so schnell wie möglich
-// zu aktivieren. Gerade in der background.js sollte das eigentlich
-// nicht nötig sein.
-//{
-    chrome.runtime.onMessage.addListener(function (request, sender, respond) {
-    // diese Funktion hört auf Messages, die im Chrome verteilt werden.
-console.log("BAC: >>[", request.type, "] von", sender.tab ?
-           "dem Content script:/L" + sender.tab.url :
-           "der Extension");
-        
-        switch (request.type) {
-            case "avoid-site":
-                url       = request.url;
-                avoid_site(url);
-                break;
-
-            case "whom-do-I-avoid?":
-                respond({
-                    AO:        tempAO,
-                    role:      activeRole,
-                    mode:      "block",       // wird erwartet. (DEB01)
-                    settings:  settings
-                });
-console.log("BAC: whom-do-I-avoid? activeRole:", activeRole, tempAO);
-                break;
-                
-            case "is-this-tab-avoided?":
-                let tab = request.tab;
-console.log("BAC: is-this-tab-avoided:", tab);
-        /////// hier eine BL-Abfrage einbauen.
-                if (tab.id >= 0 && tab.url != undefined) { // nur eine Sicherheitsabfrage
-
-                    let AOfromBL = checkBlacklist(tab.url);  
-                    if (AOfromBL.domain != 'me') { 
-                        respond({
-                            AO:        AOfromBL,
-                            role:      activeRole,
-                            mode:      "block"       // wird erwartet. (DEB01)
-                        });
-                    }
-                } else {
-console.log("     no BL-check. (TabID<0 or url=undefined)");
-                    respond({
-                        AO:     undefined,
-                        role:   activeRole,
-                        mode:   "block"
-                    });
-                }
-
-                
-                break;
-
-            case "actualize-AO":
-console.log("BAC: actualize-AO:", request);
-                actualizeBlacklist(request.avoid);
-                break;
-                
-            case "unavoid-site": {
-                url = request.url;
-                avoidDomain = request.avoidDomain;
-                let tabId   = request.tabId;
-console.log("BAC: --unavoid", tabId, url, avoidDomain);
-                removeFromBlacklist(avoidDomain);
-                pause(0.01); // um der Blacklist Zeit zu lassen zum Löschen.
-                updateTab(tabId, url);
-                notifyTab("you-are-free", avoidDomain, undefined, []);
-                break; }
-            
-            case "am-I-listed?":
-                url = request.url;
-console.log("BAC: I'll say:",    resultFromBL.entry, resultFromBL.reminder );
-                respond({
-                    avoidEntry:   resultFromBL.entry,
-                    avoidDomain:  resultFromBL.domain,
-                    subDomains:   resultFromBL.subDomains,
-                    reminder:     resultFromBL.reminder,
-                    avoidLevels:  resultFromBL.avoidLevels,
-                    alternatives: resultFromBL.alternatives
-                });
-                break;
-                
-            case "whitelist-site!":
-                url = request.url;
-console.log("BAC: bck: add to Whitelist - not implemented yet.");
-                break;
-                
-            case "pass-by!":
-                let tabId  = request.tabId;
-                let domain = request.url;
-console.log("BAC: --pass by", tabId, domain);
-                pause(0.2);
-//                chrome.tabs.create({url: domain});
-                updateTab(tabId, domain);
-                break;
-                
-            case "pause":
-                pause(settings.pauseTime);
-                break;
-                
-            case "unpause":
-                pause(-1);
-                break;
-                
-            case "paused?":
-                var time = new Date().getTime();
-                if (time < rewakeTime) { respond({paused: true});
-console.log("BAC: Antworte mit Pause aktiv", (rewakeTime - time)/1000.0, rewakeTime, time);}
-                else                   { respond({paused:false}); 
-console.log("BAC: Antworte mit Pause inaktiv");}                
-                break;
-                
-            case "setRole":
-                setRole(request.role);
-                break;
-                
-            case "getRole": 
-                var antwort = { type: "yourRole",
-                                role: activeRole };
-                respond( antwort);
-                break; 
-                
-            case "setAvoidLevels":
-                avoidDomain = request.avoidDomain;
-                avoidLevels = request.avoidLevels;
-console.log("BAC: setAvoidLevels", avoidDomain, avoidLevels);
-                if (bl[avoidDomain] != undefined) {
-                    bl[avoidDomain].avoidLevels = avoidLevels;
-                    notifyTab("update-avoidLevels!", "X", "Y", avoidLevels);
-                    saveBlacklist();
-                }
-                break;
-
-            case "setup":
-                myWindow = window.open('smw-setup.html', "_blank");
-                break;
-                
-            case "saveSettings":
-                settings = request.settings;
-                saveSettings();
-console.log("BAC: saveSettings:", settings );
-                break;
-                
-            case "getSettings":
-                var antwort = {
-                    type: "settings",
-                    settings: settings
-                };
-                respond( antwort);
-console.log("BAC: getSettings:", settings );
-                break;
-                
-            default:
-                console.log("BAC: I received a unknown message:", request.type);
-
-        }
-        return true;
-    });
-
-    /**
-     * send a message to my own freshly opened tab (shapemyweb.js)
-     * @param {Object} msg
-     * @param {String} msg.avoidDomain
-     */
-    var actualizeNewSite = function (msg) {
-console.log("BAC: ActualizeNewTab");
-        chrome.tabs.getSelected(null, function (myTab) {
-            chrome.tabs.sendMessage(myTab.id, {
-                type: "bg-smw-actualize",
-                url: msg
-            });
-        });
-    };
-    
-    chrome.runtime.onStartup.addListener(function(request) {
-    // Wird nach einem Startup ausgeführt
-console.log("BAC: Event: Startup.");        
-    });
-
-    chrome.runtime.onInstalled.addListener(function(request) {
-    // Wird nach dem Installieren der Extension ausgeführt
-console.log("BAC: Event: Installed.");        
-        
-    });
-
-    chrome.runtime.onUpdateAvailable.addListener(function(request) {
-    // Wird ausgeführt, wenn ein Update der Extension verfügbar ist.
-console.log("BAC: Event: UpdateAvalable.");        
-        
-    });
-
-    initBlacklist();
-console.log('BAC: Add Democontent');
-    addDemocontent(20);
-console.log('BAC: Add Democontent finished');
-    loadBlacklist();
- 
-//})();  // Dieses Konstrukt sollte man sich merken und evtl. wiedererkennen.
-// Hier endet die Funktion, die SOFORT abgearbeitet wird.
-/////////////////////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////////////////////
+const blockPage       = chrome.runtime.getURL('showstopper.html');
+const blPrefix        = 'bl:';
+const passByTime      = 12 * 1000;   // So lange darf man nach "pass-by" auf der Seite bleiben.
+const level1Time      = 60 * 1000;   // Avoid-Level 1 warnt höchstens einmal pro Minute.
+const defaultSynced   = { textOpacity: 0.7, showRole: [true, true, true, true],
+                          justRiseAvoidLevels: false, noChangeToAvoidLevel0: false };
+const defaultLocal    = { pauseTime: 10 };
 
 
-function checkWebsite(details) {
-console.log(".");
-console.log("BAC: ===== checkWebsite ====================================");
-    // Das hier ist eine Callback-Funktion, da sie als Parameter dem Eventhandler übergeben wird. In "details" stehen dann die übergebenen
-    // Parameter drin. Das sind so Dinge wie:
-    //     details.url
-    //     details.tabId
-    let urlString = details.url;
-    let tabId     = details.tabId;
-    checkKeyword(urlString); // wenn "avoid" in die Omnibox eingegeben wird.
-console.log("    TabID:", tabId, urlString);
-    
-    //////////////////  
-    // Das ist für die PAUSE-Funktion
-    // Damit tut er nichts bis zur rewakeTime
-    var time = new Date().getTime();
-    if (time < rewakeTime) { paused = true; } else { paused = false; }
-    //////////        
+// Eventlisteners ........................................................
+// Müssen synchron beim Start registriert werden, sonst weckt der Browser den
+// Service Worker für diese Ereignisse nicht auf.
+chrome.webNavigation.onBeforeNavigate.addListener(checkNavigation);
+chrome.webNavigation.onHistoryStateUpdated.addListener(checkNavigation);
+chrome.runtime.onMessage.addListener(onMessage);
+chrome.runtime.onInstalled.addListener(onInstalled);
+chrome.omnibox.onInputEntered.addListener(onOmnibox);
 
-    if (tabId >= 0 && urlString != undefined) { // nur eine Sicherheitsabfrage
 
-        let resultFromBL = checkBlacklist(urlString);  
-        if (resultFromBL.domain != 'me') { 
-            showWarning(tabId, resultFromBL);
-        }
-    } else {
-console.log("     no BL-check. (TabID<0 or url=undefined)");
+async function checkNavigation(details) {
+    // Wird bei jeder Navigation aufgerufen. Nur der Hauptframe zählt.
+    if (details.frameId !== 0 || details.tabId < 0) return;
+    if (!isWebUrl(details.url)) return;
+    if (await isPaused()) return;
+
+    let result = await checkBlacklist(details.url);
+    if (await shouldBlock(result)) {
+        await blockTab(details.tabId, details.url);
     }
+}
 
-    return { cancel: false };
+
+// Messages ..............................................................
+
+const handlers = {
+    "avoid-site": async (request, sender) => {
+        // öffnet den ShowStopper im Editmode für eine neue Seite
+        let tabId = request.tabId ?? sender.tab?.id ?? await activeTabId();
+        await openShowstopper(tabId, request.url, true);
+    },
+
+    "whom-do-I-avoid?": async (request, sender) => {
+        // Die ShowStopper-Seite fragt, für welche Seite sie angezeigt wird.
+        // Die Seite selbst soll nicht im Verlauf landen.
+        if (sender.url) chrome.history.deleteUrl({ url: sender.url }).catch(() => {});
+        let AO = request.isNew ? await getNewAO(request.url) : await checkBlacklist(request.url);
+        return {
+            AO:       AO,
+            role:     await getRole(),
+            mode:     "block",
+            settings: await loadSettings()
+        };
+    },
+
+    "is-this-tab-avoided?": async (request) => {
+        // Das Popup fragt nach dem aktuellen Tab. Steht dort gerade der ShowStopper,
+        // dann zählt die Seite, die er blockiert.
+        let url = blockedUrlOf(request.tab.url) ?? request.tab.url;
+        return {
+            AO:   await checkBlacklist(url),
+            role: await getRole()
+        };
+    },
+
+    "actualize-AO": async (request) => {
+        await actualizeBlacklist(request.avoid);
+    },
+
+    "unavoid-site": async (request, sender) => {
+        let domain = request.avoidDomain || splitUrl(request.url)[0];
+        await removeFromBlacklist(domain);
+        let tabId = request.tabId ?? sender.tab?.id;
+        if (tabId !== undefined && isWebUrl(request.url)) {
+            await chrome.tabs.update(tabId, { url: request.url });
+        }
+    },
+
+    "pass-by!": async (request, sender) => {
+        // Einmal durchlassen: die Domain kurz auf die temporäre Whitelist setzen.
+        let [domain] = splitUrl(request.url);
+        await whitelistTemporarily(domain, passByTime);
+        let tabId = request.tabId ?? sender.tab?.id;
+        if (tabId !== undefined && isWebUrl(request.url)) {
+            await chrome.tabs.update(tabId, { url: request.url });
+        }
+    },
+
+    "pause": async () => {
+        let settings = await loadSettings();
+        await pause(settings.pauseTime);
+    },
+
+    "unpause": async () => {
+        await pause(-1);
+    },
+
+    "paused?": async () => {
+        return { paused: await isPaused() };
+    },
+
+    "setRole": async (request) => {
+        await chrome.storage.local.set({ role: request.role });
+    },
+
+    "getRole": async () => {
+        return { type: "yourRole", role: await getRole() };
+    },
+
+    "setAvoidLevels": async (request) => {
+        let entry = await getEntry(request.avoidDomain);
+        if (entry) {
+            entry.avoidLevels = request.avoidLevels;
+            await saveEntry(request.avoidDomain, entry);
+        }
+    },
+
+    "setup": async () => {
+        await chrome.tabs.create({ url: chrome.runtime.getURL('smw-setup.html') });
+    },
+
+    "saveSettings": async (request) => {
+        await saveSettings(request.settings);
+    },
+
+    "getSettings": async () => {
+        return { type: "settings", settings: await loadSettings() };
+    },
+
+    "getBlacklist": async () => {
+        return { blacklist: await loadBlacklist() };
+    }
 };
 
 
+function onMessage(request, sender, respond) {
+    let handler = handlers[request.type];
+    if (!handler) return false;   // ist für eine andere Seite der Extension bestimmt
+    handler(request, sender).then(respond, (error) => {
+        console.error("BAC: Fehler bei", request.type, error);
+        respond(undefined);
+    });
+    return true;   // Antwort kommt asynchron
+}
 
-function avoid_site(url) {
-    // initialisiert ein neues AO
-    // öffnet den ShowStopper im Editmode
-    // Editmode geht er, weil als reminder 'new' übergeben wird.
-    tempAO = getNewAO(url);
-console.log("BAC: avoid-site:", tempAO.url);
-    updateTab(activeTab(), 'showstopper.html');
-};
 
-function pause(minutes) {
+async function onInstalled(details) {
+    if (details.reason === 'update') {
+        await migrateOldBlacklist();
+    }
+}
+
+
+async function onOmnibox(text) {
+    // "avoid" + Enter in der Adresszeile: die aktuelle Seite vermeiden.
+    let [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    if (tab && isWebUrl(tab.url)) {
+        await openShowstopper(tab.id, tab.url, true);
+    }
+}
+
+
+// Tabs ..................................................................
+
+async function activeTabId() {
+    let [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    return tab?.id;
+}
+
+
+async function openShowstopper(tabId, url, isNew) {
+    let target = blockPage + '?url=' + encodeURIComponent(url) + (isNew ? '&new=1' : '');
+    await chrome.tabs.update(tabId, { url: target });
+}
+
+
+async function blockTab(tabId, url) {
+    // Ruft statt der geplanten URL den ShowStopper in dem Tab auf.
+    try {
+        await openShowstopper(tabId, url, false);
+    } catch (error) {
+        console.log("BAC: Tab", tabId, "konnte nicht umgeleitet werden:", error.message);
+    }
+}
+
+
+function blockedUrlOf(url) {
+    // Liefert die blockierte URL, wenn url eine ShowStopper-Seite ist.
+    if (!url || !url.startsWith(blockPage)) return undefined;
+    return new URL(url).searchParams.get('url') ?? undefined;
+}
+
+
+// Pause / Rolle / Settings ..............................................
+
+async function isPaused() {
+    let { rewake } = await chrome.storage.local.get({ rewake: 0 });
+    return Date.now() < rewake;
+}
+
+
+async function pause(minutes) {
     // Pausiert das System indem es eine Rewaketime setzt.
     // Löschen der Pause mit: pause(-1)
-    if (minutes != null) {
-        if (minutes > 0) {
-            rewakeTime = new Date().getTime() + minutes * 1000 * 60;
-            chrome.storage.local.set({
-                'rewake': rewakeTime
-            }, function () {});
-console.log("BAC: Pause aktiviert für ", minutes, "Minuten.", rewakeTime/1000);
-        } else {
-            rewakeTime = new Date().getTime() - 1;
-            chrome.storage.local.set({
-                'rewake': rewakeTime
-            }, function () {});
-console.log("BAC: Pause deaktiviert");
-        }
-    };
-};
-
-function getRole() {
-    // Liest die globale activeRole aus dem lokalen Memory
-    // (Sollte nur einmal nach Programmstart aufgerufen werden)
-    try {
-        chrome.storage.local.get(['role'], function(res) {
-            var storedRole = res.role;
-            if (storedRole == undefined) { storedRole = 0;}
-            activeRole      = storedRole;
-            return storedRole;
-        });
-    }
-    catch (error) {
-        storedRole = 0;
-    }
-};
-
-function setRole(role) {
-    // Schreibt die globale Variable activeRole in den lokalen Memory
-    // (sollte nach einer Änderung der activeRole sofort aufgerufen werden)
-    chrome.storage.local.set( { 'role': activeRole } );
-    activeRole = role;
-console.log("BAC: Rolle geändert auf:", role);
-};
-
-function saveSettings() {
-    chrome.storage.local.set({ 
-        'pauseTime': settings.pauseTime
-    }, function () {});
-    chrome.storage.sync.set({ 
-        'justRiseAvoidLevels': settings.settingsJustRiseAvoidLevels,
-        'textOpacity'          : settings.textOpacity,
-        'showRole'             : settings.showRole,
-        'justRiseAvoidLevels'  : settings.justRiseAvoidLevels,
-        'noChangeToAvoidLevel0': settings.noChangeToAvoidLevel0
-    }, function () {});
-}
-
-function loadSettings() {
-    // Hier werden die globalen und lokalen Settings abgerufen.
-    // global = gesynced über alle Devices,
-    // local  = auf jedem Device extra gespeichert.
-    let errorLocalStorage = false;
-    try {
-        chrome.storage.local.get(['pauseTime'], function(res) { settings.pauseTime  = res.pauseTime; });    
-    }
-    catch (error) {
-        settings.pauseTime = 10;
-        errorLocalStorage = true;
-    }
-
-    try {
-        chrome.storage.sync.get(['textOpacity'], function(res) { settings.textOpacity = res.textOpacity; });
-        chrome.storage.sync.get(['showRole'], function(res) { settings.showRole = res.showRole; });
-        chrome.storage.sync.get(['justRiseAvoidLevels'], function(res) { settings.justRiseAvoidLevels = res.justRiseAvoidLevels; });
-        chrome.storage.sync.get(['noChangeToAvoidLevel0'], function(res) { settings.noChangeToAvoidLevel0 = res.noChangeToAvoidLevel0; });
-textOpacityDebug = settings.textOpacity;
-console.log("BAC: loadSettings Opacity1: ", textOpacityDebug);
-    }
-    catch (error) {
-        settings.showRole = undefined;
-console.log("BAC: loadSettings Error1: ");
-    }
-    finally {
-        if ((settings.showRole == undefined) || (errorLocalStorage)) { // Für den aller ersten Aufruf, wenn noch keine Settings gespeichert waren.
-            settings.textOpacity = 0;
-            settings.showRole = [1 , 1, 1, 1];
-            settings.justRiseAvoidLevels = false;
-            settings.noChangeToAvoidLevel0 = false;
-            saveSettings();
-    console.log("BAC: Settings error : ", settings);
-        }
-textOpacityDebug = settings.textOpacity;
-console.log("BAC: loadSettings Opacity2: ", textOpacityDebug);
-    }
-console.log("BAC: Settings loaded: ", settings);
+    let rewake = minutes > 0 ? Date.now() + minutes * 60 * 1000 : 0;
+    await chrome.storage.local.set({ rewake: rewake });
 }
 
 
-// Hier nun 2 Funktionen um Messages an andere Programmteile zu senden.
-function send2any(kommando, callback) {
-    // sendet eine Message an alle anderen Komponenten der Extension ausser content.js
-    chrome.runtime.sendMessage(
-        kommando, 
-        callback
-    );
-};    
-
-function send2content(kommando, callback) {
-    // sendet eine Message an die content.js des aktuell geöffneten Tabs
-console.log("BAC: <<[", kommando.type, "]");
-    chrome.tabs.sendMessage(activeTab(), kommando, callback);
-};
-
-function notifyTab(type, domain, reminder, avoidLevels) {    
-    // benachrichtigt die content.js, dass ihre Seite avoided ist.
-    // Das ist z.B. erforderlich um das Popup anders darzustellen.
-    // aber auch um der Showstopper Seite ihre Daten zu übergeben.
-console.log("BAC: notify Tab", domain, reminder);
-    if (domain === "me") return;
-    if (domain == myExtensionId) return;
-    var command = {
-        type: type,
-        avoidDomain: domain,
-        reminder: reminder,
-        avoidLevels: avoidLevels
-    };
-    var reply = function() {
-        var lastError = chrome.runtime.lastError;
-        if (lastError) {
-            console.log("BAC: Error:" + lastError.message);
-        }
-    };
-    try {
-        // Das Problem hier ist, dass nach einem Neuladen der Extension die ganzen
-        // bestehenden Tabs noch keine content.js laufen haben. Die kommt erst, wenn 
-        // die jeweilige Seite neu lädt.
-           send2content(command, reply);
-        }
-    catch(err) { 
-console.log("BAC: ERROR notifyTab:", domain);
-    }
+async function getRole() {
+    // Die aktive Rolle wird auf dem Gerät und nicht in der Cloud gespeichert.
+    // so kann jedes Gerät eine andere aktive Rolle haben.
+    // z.B. Firmencomputer, Homecomputer, Tablet, ...
+    let { role } = await chrome.storage.local.get({ role: 0 });
+    return role;
 }
 
 
-function activeTab() {
-    chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
-        if (tabs[0]) {
-            return tabs[0].id;
-        } else {
-console.log("BAC: ERROR! Bekomme keinen aktiven Tab.")           
-            return undefined;
-        }
+async function loadSettings() {
+    // global = gesynced über alle Devices, local = auf jedem Device extra gespeichert.
+    let synced = await chrome.storage.sync.get(defaultSynced);
+    let local  = await chrome.storage.local.get(defaultLocal);
+    return { ...synced, ...local };
+}
+
+
+async function saveSettings(settings) {
+    await chrome.storage.local.set({ pauseTime: settings.pauseTime ?? defaultLocal.pauseTime });
+    await chrome.storage.sync.set({
+        textOpacity:           settings.textOpacity,
+        showRole:              settings.showRole,
+        justRiseAvoidLevels:   !!settings.justRiseAvoidLevels,
+        noChangeToAvoidLevel0: !!settings.noChangeToAvoidLevel0
     });
 }
 
 
-function checkKeyword(url) {
-    // überprüft ob die eingegebene URL ein Keyword ist
-    // Die Omnibox gibt aber nicht einfach das eingegebene Wort zurück, 
-    // sondern bereits eine GOOGLE-Suchanfrage. 
-    // Oder je nach voreingestellter Suchmaschine eine jeweils andere.
-    // also muss man dieses Keyword aus dieser Anfrage herausfiltern.
-    let keyword = url.split("?q=");
-    if (keyword.length > 1) {
-        keyword = keyword[1].split("&");
-        if (keywordList.includes(keyword[0])) {
-console.log("BAC: Keyword erkannt:", keyword[0]);        
-            var command = {
-                send: "bck",
-                recv: "cnt",
-                type: "who-are-you?"
-            };
-console.log("BAC: Keyw. würde jetzt die SEite abfragen.");
-            send2content(command, function(ans) {
-                let url = ans.url;
-                let avoided    = ans.avoided;
-console.log("BAC: Tab tells me URL:", url);
-                if (!avoided) {
-                    avoid_site(url);
-                } else {
-console.log("BAC: Site is already avoided.")                    
-                }
-            });
-        }
+async function whitelistTemporarily(domain, milliseconds) {
+    let { tempWhitelist } = await chrome.storage.session.get({ tempWhitelist: {} });
+    tempWhitelist[domain] = Date.now() + milliseconds;
+    await chrome.storage.session.set({ tempWhitelist: tempWhitelist });
+}
+
+
+async function isWhitelisted(domain) {
+    let { tempWhitelist } = await chrome.storage.session.get({ tempWhitelist: {} });
+    return Date.now() < (tempWhitelist[domain] ?? 0);
+}
+
+
+// Blacklist .............................................................
+// Jeder Eintrag liegt unter einem eigenen Schlüssel "bl:<domain>". So greift
+// das Limit von 8 KB pro Eintrag in storage.sync nicht mehr für die ganze Liste.
+
+async function getEntry(domain) {
+    if (!domain) return undefined;
+    let key = blPrefix + domain;
+    return (await chrome.storage.sync.get(key))[key];
+}
+
+
+async function saveEntry(domain, entry) {
+    await chrome.storage.sync.set({ [blPrefix + domain]: entry });
+}
+
+
+async function loadBlacklist() {
+    let all = await chrome.storage.sync.get(null);
+    let bl  = {};
+    for (let key in all) {
+        if (key.startsWith(blPrefix)) bl[key.slice(blPrefix.length)] = all[key];
     }
+    return bl;
 }
 
 
-// Blacklist .........................................................
-
-function initBlacklist() {
-    
+async function migrateOldBlacklist() {
+    // Version 0.2 speicherte die ganze Blacklist unter einem einzigen Schlüssel.
+    let { blackList } = await chrome.storage.sync.get('blackList');
+    if (!blackList) return;
+    let entries = {};
+    for (let domain in blackList) {
+        if (/^youtube\d+\.com$/.test(domain)) continue;   // Democontent von 0.2
+        let entry = blackList[domain];
+        if (!Array.isArray(entry.alternatives)) entry.alternatives = [];
+        entries[blPrefix + domain] = entry;
+    }
+    await chrome.storage.sync.set(entries);
+    await chrome.storage.sync.remove('blackList');
+    console.log("BAC: Blacklist migriert:", Object.keys(entries).length, "Einträge");
 }
 
 
-function loadBlacklist() {
-    chrome.storage.sync.get({
-        // liest die Blacklist aus dem Speicher aus.
-        'blackList': bl
-    }, function () {
-    });
-}
-
-
-function saveBlacklist() {
-    // hier wird die Blacklist gespeichert
-    chrome.storage.sync.set({ 'blackList': bl }, function () {
-        console.log("BAC: Blacklist updated.", memorySizeOf(bl));
-    });
-}
-
-///////////////////////////
-function memorySizeOf(obj) {
-    var bytes = 0;
-
-    function sizeOf(obj) {
-        if(obj !== null && obj !== undefined) {
-            switch(typeof obj) {
-            case 'number':
-                bytes += 8;
-                break;
-            case 'string':
-                bytes += obj.length * 2;
-                break;
-            case 'boolean':
-                bytes += 4;
-                break;
-            case 'object':
-                var objClass = Object.prototype.toString.call(obj).slice(8, -1);
-                if(objClass === 'Object' || objClass === 'Array') {
-                    for(var key in obj) {
-                        if(!obj.hasOwnProperty(key)) continue;
-                        sizeOf(obj[key]);
-                    }
-                } else bytes += obj.toString().length * 2;
-                break;
-            }
-        }
-        return bytes;
+async function getNewAO(url) {
+    // Ein neues AvoidObject für den Editmode. War die Seite früher schon einmal
+    // vermieden, werden ihre Levels und Alternativen weiterverwendet.
+    let [domain] = splitUrl(url);
+    let entry    = await getEntry(domain);
+    return {
+        url:          url,
+        domain:       domain,
+        subDomains:   [],
+        reminder:     "new",
+        avoidLevels:  entry?.avoidLevels ?? [1, 1, 1, 1],
+        alternatives: entry?.alternatives ?? []
     };
-
-    function formatByteSize(bytes) {
-        if(bytes < 1024) return bytes + " bytes";
-        else if(bytes < 1048576) return(bytes / 1024).toFixed(3) + " KiB";
-        else if(bytes < 1073741824) return(bytes / 1048576).toFixed(3) + " MiB";
-        else return(bytes / 1073741824).toFixed(3) + " GiB";
-    };
-
-    return formatByteSize(sizeOf(obj));
-};
-/////////////////////////////
-
-
-
-
-
-function newBlackListEntry(domain, subDomains, reminder, avoidLevels, alternatives) {
-    // Erzeugt ein neues AvoidObject AO.
-    let AO = {};
-    AO.domain       = domain;
-    AO.subDomains   = subDomains;
-    AO.reminder     = reminder;
-    AO.avoidLevels  = avoidLevels;
-    AO.alternatives = alternatives;
-console.log("newAO reminder", AO.reminder);
-    return AO;
-};
-
-function getNewAO(url) {
-    let newAO          = {};
-    newAO.url          = url;
-    newAO.domain       = resultFromBL.domain;
-    newAO.subDomains   = resultFromBL.subDomains;
-    newAO.reminder     = "new";
-    newAO.avoidLevels  = [1, 1, 1, 1];
-    newAO.alternatives = [];
-console.log('BAC: New AO created: ', newAO);
-    return newAO;
 }
 
-function actualizeBlacklist(AO) {
-    // Aktualisiert einen Eintrag der Blacklist und speichert die Blacklist gleich.
+
+async function actualizeBlacklist(AO) {
+    // Aktualisiert einen Eintrag der Blacklist und speichert ihn gleich.
     // Fügt auch neue Einträge hinzu.
     let domain = AO.domain;
-    if (domain == myExtensionId) { console.log("BAC: MyDomain refused to add to blacklist!!"); return; }
-    tempAO = AO;
-
-    delete AO.domain;  // Das wäre eine redundante Information
-    bl[domain] = AO;
-    saveBlacklist();
-//console.log("BAC: Blacklist actualized:", AO);
-};
-
-
-// Add some democontent
-function addDemocontent(number) {
-    let dummySite;
-    if (number>3) {
-        for (var s=2; s<number/2; s++) {
-            dummySite = 'youtube' + s + '.com';
-            actualizeBlacklist(newBlackListEntry
-                  (dummySite, ['story', 'service', 'fish'], "zu viel bunt ist nicht gesunt.", [0, 1, 2, 3], [newAlternative('https://www.orf.at'),  newAlternative('https://www.diepresse.at')]));
-        }
+    if (!domain || domain == chrome.runtime.id) {
+        console.log("BAC: Domain", domain, "wird nicht in die Blacklist aufgenommen.");
+        return;
     }
-    actualizeBlacklist(newBlackListEntry
-                  ("derstandard.at", ['story', 'service', 'fish'], "zu viel bunt ist nicht gesunt.", [0, 1, 2, 3], [newAlternative('https://www.orf.at'),  newAlternative('https://www.diepresse.at')]));
-    actualizeBlacklist(newBlackListEntry
-                  ("diepresse.com", [], "zu konservativ.", [0, 1, 2, 3], {}));
-    actualizeBlacklist(newBlackListEntry
-                  ("youtube.com", [], "nix videoschaun.", [0, 1, 2, 3], []));
-    if (number>3) {
-        for (var s=2; s<number/2; s++) {
-            let dummySite = 'youtube' + (s+number/2) + '.com';
-            actualizeBlacklist(newBlackListEntry
-                  (dummySite, ['story', 'service', 'fish'], "zu viel bunt ist nicht gesunt.", [0, 1, 2, 3], [newAlternative('https://www.orf.at'),  newAlternative('https://www.diepresse.at')]));
-        }
+    await saveEntry(domain, {
+        subDomains:   Array.isArray(AO.subDomains)   ? AO.subDomains   : [],
+        reminder:     AO.reminder,
+        avoidLevels:  Array.isArray(AO.avoidLevels)  ? AO.avoidLevels  : [1, 1, 1, 1],
+        alternatives: Array.isArray(AO.alternatives) ? AO.alternatives : []
+    });
+}
+
+
+async function removeFromBlacklist(domain) {
+    // Löscht den Reminder und die Subdomains. Levels und Alternativen bleiben
+    // erhalten, damit sie beim nächsten Vermeiden wieder da sind.
+    let entry = await getEntry(domain);
+    if (entry) {
+        entry.reminder   = undefined;
+        entry.subDomains = [];
+        await saveEntry(domain, entry);
     }
 }
 
 
-function removeFromBlacklist(domain) {
-    // Löscht den Eintrag aus der Balcklist.
-console.log("BAC: Blacklist remove:", domain, bl[domain].reminder);
-    if (bl[domain].reminder != undefined) {
-        bl[domain].reminder  = undefined;
-        bl[domain].subDomains = []; // damit werden alle subDomains gelöscht.
-//        bl[domain].avoidLevels = [];  // damit merkt er sich die Einstellungen.
-        saveBlacklist();
-console.log("BAC: Blacklist removed:", domain);
-    } else {
-console.log("BAC: Blacklist remove error!!!!");        
-    }
-}
-
-
-function checkBlacklist(url) {
+async function checkBlacklist(url) {
     // Prüft, ob sich die Domain von url in der Blacklist findet.
-    // Holt sich den RoleValue der angibt wie stark gewarnt werden soll.
-    // Und gibt das Ergebnis des Checks zurück.
-    let resultingAO = {};
-    resultingAO.entry = undefined; // Zeichen nach aussen, dass gerade geprüft wird.
-    resultingAO.domain       = "me";
-    resultingAO.subDomains   = [];
-    resultingAO.reminder     = undefined;
-    resultingAO.avoidLevels  = [0, 0, 0, 0];
-    resultingAO.alternatives = [];
+    // und gibt das Ergebnis des Checks zurück.
+    let resultingAO = {
+        url:          url,
+        domain:       "me",
+        subDomains:   [],
+        reminder:     undefined,
+        avoidLevels:  [0, 0, 0, 0],
+        alternatives: [],
+        block:        false,
+        entry:        false,
+        avoided:      false
+    };
+    if (!isWebUrl(url)) return resultingAO;   // eigene Seiten, about:, chrome:// ...
 
-    let avoidLevels  = [];
-    let alternatives = [];
-    let entry = false;
-    let block = false;
     let [domain, subDomains] = splitUrl(url);
-console.log('BAC: checkBlack:', domain);
-    if (domain == myExtensionId || domain == 'extensions') {
-console.log("BAC: checkBlack: das ist meine eigene Seite.")
-        return resultingAO;
-    }
-console.log("BAC: checkBlack:", domain, subDomains, "____________");
-    let subs = [];
-    
-    let foundEntry = bl[domain];
+    resultingAO.domain = domain;
+
+    let foundEntry = await getEntry(domain);
     if (foundEntry) {
-        let found;
-        subs  = foundEntry.subDomains;
-        if (subs && (subs.length > 0)) { // kein Eintrag bedeutet ganze Seite sperren
-            // Prüfe ob für den gefundenen Eintrag foundEntry Subdomains gespeichert sind. Dann sind nur diese Subdomans zu sperren. 
-            for (var s=0; s<subs.length; s++) {
-                found = subDomains.find(function(sub) {return sub == subs[s]});
-                if ( found ) {
-                    block = true;
-                }
-            }
-        } else { block = true;
-        };
-        
-        reminder     = foundEntry.reminder;
-        avoidLevels  = foundEntry.avoidLevels;
-        alternatives = foundEntry.alternatives;
-        entry        = true;
-    } else {
-    };
-
-    resultingAO.url          = url;
-    resultingAO.domain       = domain;
-    resultingAO.subDomains   = subs;
-    resultingAO.reminder     = reminder;
-    resultingAO.avoidLevels  = avoidLevels;
-    resultingAO.alternatives = alternatives;
-    resultingAO.block        = block;
-    resultingAO.entry        = entry;       // ist auch true wenn der avoidLevel[activeRole] gerade 0 angibt. Dies gibt also an, ob ein Datenbankeintrag existiert. 
-    return resultingAO;
-};
-    
-
-function showWarning(tabId, result) {    
-    // Hier wird die Warnmeldung ausgegeben.
-
-    // Aber nicht an die eigenen Seiten.
-    if (result.domain == "me")  return;
-    if (paused)                 return;
-    if (!result.block)          return;
-    
-    var avoidLevel = result.avoidLevels[activeRole];
-    if ((result.reminder != undefined) && (avoidLevel > 0)) {
-        switch (avoidLevel) {
-            case 1:
-                let domain = result.domain;
-                var time = new Date().getTime();
-                if (time < tempWhitelist[domain] ) return;
-                
-                tempWhitelist[domain] = time + 60000;
-                blockTab(tabId, result);
-                break;
-
-            case 2:
-                blockTab(tabId, result);
-                break;
-
-            case 3:
-                blockTab(tabId, result);
-                break;
-
-                
-            default:
-                break;
-        };
-    };
-};
-
-
-function blockTab(tabId, result) {
-    // Ruft statt der geplanten URL eine Sicherheitsurl in dem Tab auf.
-    tempAO = result;
-    updateTab(tabId, blockWebsite);
-    chrome.history.deleteUrl(blockWebsite);
-}
-
-
-function updateTab(tabId, url) {
-console.log("BAC: Update:", tabId, url);
-    chrome.tabs.update(tabId, {
-        url: url
-    }, _ => {
-        let e = chrome.runtime.lastError;
-        if (e != undefined) {
-            console.log(tabId, _, e);
+        let subs  = foundEntry.subDomains ?? [];
+        let block = true;   // kein Subdomain-Eintrag bedeutet ganze Seite sperren
+        if (subs.length > 0) {
+            // Sind Subdomains gespeichert, dann sind nur diese zu sperren.
+            block = subs.some(sub => subDomains.includes(sub));
         }
-    });    
+        resultingAO.subDomains   = subs;
+        resultingAO.reminder     = foundEntry.reminder;
+        resultingAO.avoidLevels  = foundEntry.avoidLevels ?? [0, 0, 0, 0];
+        resultingAO.alternatives = foundEntry.alternatives ?? [];
+        resultingAO.block        = block;
+        resultingAO.entry        = true;   // auch true, wenn der avoidLevel der aktiven Rolle 0 ist.
+        resultingAO.avoided      = foundEntry.reminder !== undefined;
+    }
+    return resultingAO;
 }
 
 
-console.log("BAC: background.js finished");
+async function shouldBlock(result) {
+    // Entscheidet abhängig vom Avoid-Level der aktiven Rolle, ob blockiert wird.
+    if (!result.block || !result.avoided) return false;
+    let avoidLevel = result.avoidLevels[await getRole()] ?? 0;
+    if (avoidLevel <= 0) return false;
+    if (await isWhitelisted(result.domain)) return false;
+    if (avoidLevel == 1) {
+        await whitelistTemporarily(result.domain, level1Time);
+    }
+    return true;
+}
+
+
+function addDemoContent() {
+    // Zum Ausprobieren in der Konsole des Service Workers aufrufen.
+    let demo = [
+        ["derstandard.at", ['story', 'service', 'fish'], "zu viel bunt ist nicht gesunt."],
+        ["diepresse.com",  [], "zu konservativ."],
+        ["youtube.com",    [], "nix videoschaun."]
+    ];
+    return Promise.all(demo.map(([domain, subDomains, reminder]) => actualizeBlacklist({
+        domain, subDomains, reminder,
+        avoidLevels:  [0, 1, 2, 3],
+        alternatives: [newAlternative('https://www.orf.at'), newAlternative('https://www.diepresse.com')]
+    })));
+}

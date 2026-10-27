@@ -14,7 +14,7 @@
 "L012":  { "message": "Wishes, suggestions ... contact us!", "description": "contact link"},
 "L013":  { "message": "OH NO!", "description": "The message in the mouth on hoover unavoid"},
 "L014":  { "message": "Really?", "description": "The message in the mouth on hoover pause"},
-"L015":  { "message": "Hey! Not really!", "description": "The message in the mouth on hoover passby"},"L020": { "message": "Alternative websites.", "description": " "},
+"L015":  { "message": "Hey! Not really!", "description": "The message in the mouth on hoover passby"},
 "L020": { "message": "Alternative websites", "description": " "},
 "L021": { "message": "Ignore your will", "description": " "},
 "L022": { "message": "don't annoy me again here", "description": " "},

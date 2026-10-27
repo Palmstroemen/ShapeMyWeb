@@ -50,24 +50,36 @@ console.log("SIGN: Success.");
 debugfield = document.getElementById('reminder');        
 
         // Initialisiere die Buttons
-        $('#buttonUnavoid').on('click', unavoidClicked);
-        $('#buttonPause2').on('click', pauseClicked);
-        $('#buttonPassby').on('click', passbyClicked);
-        
-        $('#buttonUnavoid').on('mouseenter', unavoidHoover);
-        $('#buttonUnavoid').on('mouseleave', showReminder);
-        $('#buttonPause2').on('mouseenter', pauseHoover);
-        $('#buttonPause2').on('mouseleave', showReminder);
-        $('#buttonPassby').on('mouseenter', passbyHoover);
-        $('#buttonPassby').on('mouseleave', showReminder);
-
+        initSignButtons();
         nextUnpeer();
-        
+
     } else {
-console.log("SIGN: Retry later.");        
+console.log("SIGN: Retry later.");
         setTimeout(activateFaceMimics, 34);
     }
 };
+
+
+let signButtonsInitialized = false;
+
+function initSignButtons() {
+    // Nur einmal, auch wenn zwischen Edit- und Normalmodus gewechselt wird.
+    if (signButtonsInitialized) return;
+    signButtonsInitialized = true;
+    let buttonUnavoid = document.getElementById('buttonUnavoid');
+    let buttonPause2  = document.getElementById('buttonPause2');
+    let buttonPassby  = document.getElementById('buttonPassby');
+    buttonUnavoid.addEventListener('click', unavoidClicked);
+    buttonPause2.addEventListener('click', pauseClicked);
+    buttonPassby.addEventListener('click', passbyClicked);
+
+    buttonUnavoid.addEventListener('mouseenter', unavoidHoover);
+    buttonUnavoid.addEventListener('mouseleave', showReminder);
+    buttonPause2.addEventListener('mouseenter', pauseHoover);
+    buttonPause2.addEventListener('mouseleave', showReminder);
+    buttonPassby.addEventListener('mouseenter', passbyHoover);
+    buttonPassby.addEventListener('mouseleave', showReminder);
+}
      
 
 function mimic(m) {
@@ -298,23 +310,16 @@ function eyesOff() {
 
 function unavoidClicked() {
 // Wenn der Button geklicked wird, gibt's noch eine "Bist du sicher" Abfrage.
-    $('buttonUnavoid').stop(false, true);
-    $.confirm({
-        title: 'Remove this sign?',
-        content: 'This will remove all your settings associated with this sign! Are you sure?',
-        icon: 'fa fa-warning',
-        buttons: {
-             ok: function() { unavoidConfirmed(); },
-             cancel: function () {}
-        }
-    });
+    if (confirm('Remove this sign?\nThis will remove all your settings associated with this sign! Are you sure?')) {
+        unavoidConfirmed();
+    }
 };
 
 function unavoidConfirmed() {  
 // Erst, wenn die "Bist du sicher"-Abfrage bejaht wird, wird die Seite unavoided.
     console.log("unavoid clicked");
     signtag.style.animation = 'ausblendung 1s';
-    chrome.extension.sendMessage({
+    chrome.runtime.sendMessage({
         type: 'unavoid-site',
         tabId: myTabId,
         avoidDomain: avoidDomain,
@@ -323,14 +328,15 @@ function unavoidConfirmed() {
 };
 
 function pauseClicked() {
-    console.log("Pause clicked");
-    setPause(10);
-    
+    // Pausiert die Extension und geht dann doch auf die Seite.
+    chrome.runtime.sendMessage({ type: 'pause' }, function () {
+        window.location.href = url;
+    });
 };
 
 function passbyClicked() {
     console.log("passby clicked", url, avoidDomain);
-    chrome.extension.sendMessage({
+    chrome.runtime.sendMessage({
         type: "pass-by!",
         tabId: myTabId,
         url: url

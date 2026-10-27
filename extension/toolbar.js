@@ -106,7 +106,7 @@ function setRole(r) {
     if (checkNoChangeToAvoidLevel0(r)) {
         let button = "buttonR"+r;
         activeRole = r;
-        chrome.extension.sendMessage({
+        chrome.runtime.sendMessage({
             type: 'setRole',
             role: activeRole
         });
@@ -175,7 +175,7 @@ console.log("ToB: Pause clicked");
     if (!paused) {
         setPause(10);
     } else {
-        chrome.extension.sendMessage({
+        chrome.runtime.sendMessage({
             type: 'unpause'
         });
         window.close();
@@ -183,7 +183,7 @@ console.log("ToB: Pause clicked");
 }
 
 function setPause(minutes) {
-    chrome.extension.sendMessage({
+    chrome.runtime.sendMessage({
         type: 'pause',
         minutes: minutes
     });
@@ -201,7 +201,7 @@ function setAvoidLevel(l) {
         if ( avoidLevels[l] > 3 ) avoidLevels[l] = 0; 
     }
     setAvoidLevelButton(l, avoidLevels[l]);
-    chrome.extension.sendMessage({
+    chrome.runtime.sendMessage({
         type: 'setAvoidLevels',
         avoidDomain: avoidDomain,
         avoidLevels: avoidLevels

@@ -1,47 +1,26 @@
-console.log("Setup.js started");
-// global Variables
-//var blReminder = {};
-//var blRoleValues = {};
+// Die Setup-Seite: listet alle Einträge der Blacklist auf.
+"use strict";
 
-//alert("Setup.js A");
-//$.getScript("libraries/smw-blacklist.js", function() {});
-//alert("Setup.js B");
-/*
-function getBlacklist() {
-    chrome.storage.sync.get({
-        // liest die Blacklist aus dem Speicher aus.
-        // ...storage.sync... ist ein mit dem Google-Konto auf allen Geräten gesyncter Speicher.
-        // ...storage.local... wäre ein lokaler Speicher auf dem Gerät.
-            'reminders': blReminder,
-            'roles': blRoleValues
-        }, function () {
-
-    });
-}
-*/
-
-function refreshBlacklist() {
-    var blacklistSetup = "";
-    for (domain in blReminder) {
-        var reminder = blReminder[domain];
-        blacklistSetup += "<li class=\"ui-widget-content\"><strong> " + domain + " </strong><em> " + reminder + "</em></li>";
+function refreshBlacklist(bl) {
+    let blacklistSetup = "";
+    for (let domain of Object.keys(bl).sort()) {
+        let entry    = bl[domain];
+        let avoided  = entry.reminder !== undefined;
+        let subs     = (entry.subDomains ?? []).join(', ');
+        let levels   = (entry.avoidLevels ?? []).join(' / ');
+        blacklistSetup += "<li class='" + (avoided ? "" : "inactive") + "'>"
+                        + "<strong>" + escapeHtml(domain) + "</strong> "
+                        + "<em>" + escapeHtml(avoided ? entry.reminder : "(nicht aktiv)") + "</em>"
+                        + "<div class='details'>"
+                        + (subs ? "Bereiche: " + escapeHtml(subs) + " · " : "")
+                        + "Levels: " + escapeHtml(levels)
+                        + "</div></li>";
     }
-    console.log(blacklistSetup)
-    document.getElementById("domainlist").innerHTML = blacklistSetup;
+    document.getElementById("domainlist").innerHTML = blacklistSetup || "<li><em>–</em></li>";
 }
 
-$(document).ready(function () {
-    // Wird aufgerufen, sobald das Dokument geladen ist.
-    "use strict";
-    refreshBlacklist();
+document.addEventListener("DOMContentLoaded", function () {
+    chrome.runtime.sendMessage({ type: "getBlacklist" }, function (ans) {
+        refreshBlacklist(ans.blacklist);
+    });
 });
-
-
-$(function () {
-    $("#selectable").selectable();
-});
-
-
-loadBlacklist();
-
-console.log("Setup.js finished");

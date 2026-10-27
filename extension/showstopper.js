@@ -35,12 +35,9 @@ getMyTabId();
 
 
 function getMyTabId() {
-    chrome.tabs.query({
-        active: true,
-        currentWindow: true
-    }, function (tabs) {
-        myTabId = tabs[0].id;
-    });    
+    chrome.tabs.getCurrent(function (tab) {
+        myTabId = tab.id;
+    });
 }
 
 
@@ -52,20 +49,6 @@ console.log("SST: >>[", request.type, "] von", sender.tab ?
         "dem Content script:" + sender.tab.url :
         "der Extension");
     switch (request.type) {
-            
-            case "are-you-avoided?":
-console.log("SST: Ich werde gefragt, ob ich avoided bin:", avoidDomain);
-                respond({url: url,  // hier war avoidDomain. Warum? Geändert um die richtige URL an popup.js weiterzugeben.
-                         url: url,
-                         avoided: true, 
-                         avoidDomain: avoidDomain,
-                         subDomains: subDomains,
-                         avoidLevels: avoidLevels, 
-                         reminder: reminder
-                        });
-
-console.log("SST: Na sage ich:", url, avoidDomain, reminder, avoidLevels);
-                break;
             
             case "setRole":
                 activeRole = request.role;
@@ -80,8 +63,6 @@ console.log("SST: Rolle wurde geändert auf", activeRole);
                 respond();
                 break;     
             
-        default:
-            console.log("SST: Kenne ich nicht.");
     }
 });
 
@@ -92,17 +73,20 @@ console.log("SST: Rolle wurde geändert auf", activeRole);
 document.addEventListener("DOMContentLoaded", function(){
     // Wird aufgerufen sobald das Dokument geladen ist.
     // Nachfragen, wer überthaupt avoided werden soll.
-console.log("SST: ask whom-do-I-avoid?");
-    
+    // Die blockierte URL steht in der Adresse dieser Seite: showstopper.html?url=...[&new=1]
+    let params = new URLSearchParams(window.location.search);
+
     chrome.runtime.sendMessage({
         type: "whom-do-I-avoid?",
+        url: params.get('url'),
+        isNew: params.has('new')
     }, function (ans) {
         url          = ans.AO.url;
         avoidDomain  = ans.AO.domain;
         subDomains   = ans.AO.subDomains;
         reminder     = ans.AO.reminder;
         avoidLevels  = ans.AO.avoidLevels;
-        alternatives = ans.AO.alternatives;
+        alternatives = Array.isArray(ans.AO.alternatives) ? ans.AO.alternatives : [];
         displayMode  = ans.mode;
         activeRole   = ans.role;
         settings     = ans.settings;
@@ -124,8 +108,7 @@ console.log("SST: Got answer whom-do-I-avoid:", ans.AO, displayMode, avoidLevels
     });
 
     
-//    $("header").load("header.html");
-    $("#toolbar").load("toolbar.html", function() {
+    loadFragment("#toolbar", "toolbar.html").then(function() {
         toolbarLoaded = true;
         toolbar.avoidLevles = avoidLevels;
         toolbar.activeRole = activeRole;
@@ -164,10 +147,10 @@ function installSetupEventPauseTime() {
     let slider = document.getElementById("pauseTime");
     slider.oninput = function() {
         let pauseTime = this.value*5;
-        document.getElementById('pauseMinutes').innerHTML = pauseTime;
+        document.getElementById('pauseMinutes').textContent = pauseTime;
         slider.onchange = function() {
             settings.pauseTime = pauseTime;
-            chrome.extension.sendMessage({
+            chrome.runtime.sendMessage({
                 type: 'saveSettings',
                 settings: settings
             });
@@ -181,7 +164,7 @@ function installSetupJustRiseAvoidLevelsCheckbox() {
         settings.justRiseAvoidLevels = false;
         if (this.checked) { settings.justRiseAvoidLevels = true; } 
             
-        chrome.extension.sendMessage({
+        chrome.runtime.sendMessage({
             type: 'saveSettings',
             settings: settings
         });
@@ -194,7 +177,7 @@ function installSetupNoChangeToAvoidLevel0Checkbox() {
         settings.noChangeToAvoidLevel0 = false;
         if (this.checked) { settings.noChangeToAvoidLevel0 = true; } 
             
-        chrome.extension.sendMessage({
+        chrome.runtime.sendMessage({
             type: 'saveSettings',
             settings: settings
         });
@@ -207,7 +190,7 @@ function installSetupDoNotEnterCheckbox() {
         settings.textOpacity = 0;
         if (this.checked) { settings.textOpacity = 0.7; } 
             
-        chrome.extension.sendMessage({
+        chrome.runtime.sendMessage({
             type: 'saveSettings',
             settings: settings
         });
@@ -222,7 +205,7 @@ function installSetupShowRoleCheckbox(r) {
 console.log("SST: showRoles:", settings.showRole);
         if (this.checked) { settings.showRole[r] = true; } 
             
-        chrome.extension.sendMessage({
+        chrome.runtime.sendMessage({
             type: 'saveSettings',
             settings: settings
         });
@@ -233,7 +216,7 @@ console.log("SST: showRoles:", settings.showRole);
 
 
 function setSettings() {
-    document.getElementById('pauseMinutes').innerHTML = settings.pauseTime;
+    document.getElementById('pauseMinutes').textContent = settings.pauseTime;
     document.getElementById('pauseTime').value=settings.pauseTime/5;
     setCheckbox('showDoNotEnter', settings.textOpacity);
     setCheckbox('showRole0', settings.showRole[0]);
@@ -322,7 +305,7 @@ console.log("SST: setDisplayMode", mode, reminder);
         showDomainInfo(displayMode);
 
     } else {
-        setTimeout(setDisplayMode, 28);
+        setTimeout(function () { setDisplayMode(mode); }, 28);
     }
 };
 
@@ -391,10 +374,10 @@ console.log('SST: Alternatives:', alternatives[a]);
         if ((displayMode == "edit") || (editID == a)) {
             fillString += "<div class='alternative' id='alternative" + a + "' ";
             fillString += "style='background-color:";
-            fillString += alternatives[a].color;
+            fillString += escapeHtml(alternatives[a].color);
             fillString += "'>";
             fillString += iconFrom(domain) + " ";
-            fillString += alternatives[a].name;
+            fillString += escapeHtml(alternatives[a].name);
             fillString += "<div class='alternativeClaimEdit'>";
             fillString += "<input id='inputAlternativeClaim" + a + "' class='alternativeClaimInput'>";
 //            fillString += "<span id='inputAlternativeClaim" + a + "'>" + alternatives[a].claim + "</span>";
@@ -405,15 +388,16 @@ console.log('SST: Alternatives:', alternatives[a]);
             fillString += "</div>";        
         }
         else {
-            fillString += "<a href='" + alternatives[a].url + "'>";
-            fillString += "<div class='alternative'";
+            let href = isWebUrl(alternatives[a].url) ? alternatives[a].url : '#';
+            fillString += "<a href='" + escapeHtml(href) + "'>";
+            fillString += "<div class='alternative' ";
             fillString += "style='background-color:";
-            fillString += alternatives[a].color;
+            fillString += escapeHtml(alternatives[a].color);
             fillString += "'>";
             fillString += iconFrom(domain) + " ";
-            fillString += alternatives[a].name;
+            fillString += escapeHtml(alternatives[a].name);
             fillString += "<div class='alternativeClaim'>";
-            fillString += alternatives[a].claim;
+            fillString += escapeHtml(alternatives[a].claim);
             fillString += "</div>";
             fillString += "</div>";
             fillString += "</a>";        
@@ -488,18 +472,13 @@ console.log("SST: Color changed", id, inputColor);
 
 
 function iconFrom(domain) {
-    let link = "<img src='https://icons.duckduckgo.com/ip2/www." + domain + ".ico' class='icon'>";
-console.log("SST: Get Favicon from: ", link);    
-    return link;
+    return "<img src='https://icons.duckduckgo.com/ip2/www." + escapeHtml(domain) + ".ico' class='icon'>";
 }
 
 
 function isValidURL(urlString) {
-    let [domain, sub] = splitUrl(urlString);
-    if (domain == chrome.runtime.id) {
-        return false;
-    }
-    return true;
+    // Nur http(s)-Adressen, keine Seiten der Extension selbst.
+    return isWebUrl(urlString);
 }
 
 
@@ -519,12 +498,17 @@ function saveChanges() {
     AO.reminder     = reminderEntrybox.value;
     AO.avoidLevels  = avoidLevels;
     AO.alternatives = alternatives;
-    chrome.extension.sendMessage({
+    chrome.runtime.sendMessage({
         type: 'actualize-AO',
-        tabId: myTabId,
         avoid: AO
     });
 };
+
+
+function sendChanges() {
+    // wird von showDomainInfos.js aufgerufen
+    saveChanges();
+}
 
 
 function fillInReminder() {
@@ -553,7 +537,7 @@ console.log("SST: Beispielsätze");
             }, 3000);  
             
         } else {
-            reminderTag.innerHTML = reminder; 
+            reminderTag.textContent = reminder;
             fitReminder();
             reminderEntrybox.value = reminder;        
             fitEntrybox();
@@ -599,7 +583,7 @@ function fitEntrybox() {
 function fitReminder() {
 // Fits Entrybox to size of text.
     let reminder = document.getElementById("reminder");
-    let text = reminder.innerHTML;
+    let text = reminder.textContent;
     if (text.length < 47) {
         reminder.className = 'lines2';
     } else {
@@ -617,7 +601,7 @@ function initConfirmButtons() {
 
     document.getElementById("buttonCancel").addEventListener("click", function () {
         // Eventlistener für den Cancle-Button
-        chrome.extension.sendMessage({
+        chrome.runtime.sendMessage({
             type: "pass-by!",
             tabId: myTabId,
             url: url

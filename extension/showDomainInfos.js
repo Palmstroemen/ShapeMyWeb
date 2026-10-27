@@ -40,23 +40,23 @@ Durch Löschen aller Bereiche blockierst du die gesamte Website.
         avoidDomain = mainDomain;
 console.log("showDomainInfos: Sub", subDomains, newSubs);
         if (!subDomains || subDomains.length == 0) { // keine Subdomains
-            document.getElementById("domainSolo").innerHTML = mainDomain;
-            document.getElementById("domainSolo2").innerHTML = mainDomain;
+            document.getElementById("domainSolo").textContent = mainDomain;
+            document.getElementById("domainSolo2").textContent = mainDomain;
             document.getElementById("infoDom").style.display = "block";
         } else { // Subdomains
             if (subDomains.length < 2) {
-                document.getElementById("domainSub").innerHTML = mainDomain;
+                document.getElementById("domainSub").textContent = mainDomain;
                 let sub = subDomains[0];
-                document.getElementById("avoidedSub").innerHTML = sub;
+                document.getElementById("avoidedSub").textContent = sub;
                 document.getElementById("infoSub").style.display = "block";
-                newSubs = newSubs.remove(subDomains[0]);
+                newSubs = newSubs.filter(item => item != subDomains[0]);
             } else {
-                document.getElementById("domainSubs").innerHTML = mainDomain;
+                document.getElementById("domainSubs").textContent = mainDomain;
                 showSubdomains();
                 document.getElementById("infoSubs").style.display = "block";
                 newSubs = newSubs.filter(item => !subDomains.includes(item));
             }
-            document.getElementById("domainSolo2").innerHTML = mainDomain;
+            document.getElementById("domainSolo2").textContent = mainDomain;
         }
 console.log("showDomainInfos: Su2", subDomains, newSubs);
 
@@ -78,7 +78,7 @@ function showSubdomains() {
     let fillString = '';
     for (var a = 0; a < subDomains.length; a++) {
         fillString += "<span class='subdomain'>";
-        fillString += subDomains[a];
+        fillString += escapeHtml(subDomains[a]);
         if (recentDisplayMode == 'edit') {
             fillString += "<button id='buttonSub" + a + "' class='buttonSmallRemove'>X</button>";
         }
@@ -118,7 +118,7 @@ function showAddSubs(newSubs) {
             document.getElementById('advancedOff').style.display = 'none';
             let buttonAvoidAll = document.getElementById('blockWholeSite');
             buttonAvoidAll.addEventListener('click', function () {
-                chrome.extension.sendMessage({
+                chrome.runtime.sendMessage({
                     type: 'avoid-site',
                     url: url
                 });
@@ -154,25 +154,16 @@ function showAddSubs(newSubs) {
             document.getElementById('addSubB2').style.display = 'inline-block';
         }
         let buttonsNew = '';
-        for (var sub=0; sub < newSubs.length; sub++) {
-            let button = '<button id="buttonSubAdd'+sub+'">'+newSubs[sub]+'</button>';
-            buttonsNew += button;
+        for (let sub = 0; sub < newSubs.length; sub++) {
+            buttonsNew += '<button id="buttonSubAdd' + sub + '">' + escapeHtml(newSubs[sub]) + '</button>';
         }
         document.getElementById('buttonSubdom').innerHTML = buttonsNew;
-        let avoidSubs = [];
-        for (var sub=0; sub < newSubs.length; sub++) { // add EventListeners
-            let buttonId  = 'buttonSubAdd'+sub;
-            let button    = document.getElementById(buttonId);
-            let buttonSub = button.innerHTML;
-            button.addEventListener('click', function() {
-console.log('ShowDomainInfo:', buttonId, 'clicked', newSubs, sub);
-                avoidSubs.push(buttonSub);
-                newSubs.splice(sub-1, 1);
-//                            subdomainSection.style.display = 'none';
-                subDomains = subDomains.concat(avoidSubs);
-console.log('ShowDomainInfo: avoided Subs', subDomains, newSubs);
+        for (let sub = 0; sub < newSubs.length; sub++) { // add EventListeners
+            let buttonSub = newSubs[sub];
+            document.getElementById('buttonSubAdd' + sub).addEventListener('click', function() {
+                subDomains = (subDomains || []).concat([buttonSub]);
                 showSubdomains();
-                showAddSubs(newSubs);
+                showAddSubs(newSubs.filter(item => item != buttonSub));
                 sendChanges();
            });
         }
