@@ -146,9 +146,21 @@ Chrome-Abschnitt übernehmen. Kategorie: Productivity.
 
 ---
 
-## Noch zu erstellen (Punkt 3)
+## Bilder
 
-- Screenshots 1280×800 (mind. 1, besser 3–5): Stoppschild mit Alternativen,
-  Popup, Editmode, Willkommensseite
-- Chrome: kleine Werbekachel 440×280
-- Icon 128×128 ist vorhanden (`extension/images/icon-128.png`)
+Liegen in `docs/store/de/` und `docs/store/en/` und werden mit
+`npm run store-assets` aus der echten Extension neu erzeugt (z. B. nach
+Änderungen an der Oberfläche). Die Domains darin sind ausgedacht.
+
+| Datei                  | Größe    | Verwendung                                   |
+|------------------------|----------|----------------------------------------------|
+| `1-stoppschild.png`    | 1280×800 | Screenshot 1 – das Stoppschild (Hauptbild)   |
+| `2-popup.png`          | 1280×800 | Screenshot 2 – Seite mit zwei Klicks vermeiden |
+| `3-editmode.png`       | 1280×800 | Screenshot 3 – eigene Worte und Alternativen |
+| `4-willkommen.png`     | 1280×800 | Screenshot 4 – Willkommensseite, Datenschutz |
+| `promo-440x280.png`    | 440×280  | Chrome Web Store: kleine Werbekachel          |
+| `extension/images/icon-128.png` | 128×128 | Store-Icon                           |
+
+Im Chrome Web Store können Screenshots und Kachel pro Sprache hinterlegt werden
+(Deutsch → `de/`, alle anderen → `en/`). AMO und Edge zeigen dieselben Screenshots
+für alle Sprachen: dort die englischen verwenden.
