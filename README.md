@@ -13,7 +13,7 @@ alternativen Webseiten, die du stattdessen besuchen möchtest.
   Adresszeile `avoid`, Leertaste und Enter eingeben.
 - **Teilbereiche:** nur bestimmte Bereiche einer Seite sperren
   (z. B. `derstandard.at/story`).
-- **Rollen:** vier Rollen (Person, Zuhause, Arbeit, Kaffee) mit je eigenem
+- **Rollen:** vier Rollen (Ich, zu Hause, Arbeit, unterwegs) mit je eigenem
   Avoid-Level pro Seite. Die aktive Rolle gilt pro Gerät.
 - **Avoid-Levels:** 0 = frei, 1 = höchstens einmal pro Minute warnen,
   2 = immer warnen, 3 = sperren ohne „trotzdem weiter“.
@@ -32,10 +32,11 @@ extension/          die Extension selbst (Manifest V3)
   popup.*           Menü beim Klick auf das Icon
   showstopper.*     das Stoppschild bzw. der Editmode
   smw-setup.*       Liste aller vermiedenen Seiten
+  welcome.*         Willkommensseite nach der Installation (auch über „?“ im Menü)
   libraries/        gemeinsame Hilfsfunktionen, Übersetzung
   _locales/         de, en, it
 test/               Unit-Tests (Node) und Browser-Smoke-Tests
-docs/               Konzepte und Skizzen
+docs/               Konzepte, Skizzen, Store-Texte, Datenschutzerklärung
 TODO.md             offene Punkte
 ```
 
@@ -74,6 +75,12 @@ Unter Manifest V3 kann der Browser den Hintergrundprozess jederzeit beenden.
 Blockiert wird über `webNavigation.onBeforeNavigate`: Der Tab wird auf
 `showstopper.html?url=<blockierte URL>` umgeleitet. Dafür braucht die Extension
 keine Host-Berechtigungen.
+
+## Datenschutz
+
+ShapeMyWeb sammelt keine Daten – Details in der
+[Datenschutzerklärung](docs/privacy.md). Texte für die Store-Einträge stehen in
+[docs/store-listing.md](docs/store-listing.md).
 
 ## Lizenz
 
