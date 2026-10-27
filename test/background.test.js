@@ -278,3 +278,90 @@ test('Ein unbekanntes Design fällt auf das Stoppschild zurück', async () => {
     await bg.send({ type: 'saveSettings', settings: { ...settings, design: 'neon' } });
     assert.equal((await bg.send({ type: 'getSettings' })).settings.design, 'classic');
 });
+
+// Pakete, Verwaltung, Import ...............................................
+
+const entry = (extra = {}) => ({ reminder: 'Paket', subDomains: [], avoidLevels: [1, 1, 1, 1],
+    alternatives: [{ url: 'https://a.example/', name: 'a.example' }], ...extra });
+
+test('adopt-entries legt neue Einträge an', async () => {
+    const bg = loadBackground();
+    const ans = await bg.send({ type: 'adopt-entries', entries: { 'temu.com': entry() } });
+    assert.deepEqual(ans.adopted, ['temu.com']);
+    const { blacklist } = await bg.send({ type: 'getBlacklist' });
+    assert.equal(blacklist['temu.com'].reminder, 'Paket');
+    assert.deepEqual(blacklist['temu.com'].avoidLevels, [1, 1, 1, 1]);
+});
+
+test('adopt-entries behält eigene Erinnerung und Levels und ergänzt nur neue Alternativen', async () => {
+    const bg = loadBackground();
+    await avoid(bg, 'amazon.de', { reminder: 'Meins', avoidLevels: [3, 3, 3, 3],
+        alternatives: [{ url: 'https://a.example/', name: 'a.example' }] });
+    await bg.send({ type: 'adopt-entries', entries: { 'amazon.de': entry({
+        alternatives: [{ url: 'https://a.example/', name: 'a.example' }, { url: 'https://b.example/', name: 'b.example' }] }) } });
+    const e = (await bg.send({ type: 'getBlacklist' })).blacklist['amazon.de'];
+    assert.equal(e.reminder, 'Meins');
+    assert.deepEqual(e.avoidLevels, [3, 3, 3, 3]);
+    assert.deepEqual(e.alternatives.map(a => a.url), ['https://a.example/', 'https://b.example/']);
+});
+
+test('adopt-entries: Teilbereiche werden vereinigt, die ganze Seite hat Vorrang', async () => {
+    const bg = loadBackground();
+    await bg.send({ type: 'adopt-entries', entries: { 'google.com': entry({ subDomains: ['search'] }) } });
+    await bg.send({ type: 'adopt-entries', entries: { 'google.com': entry({ subDomains: ['maps'] }) } });
+    let e = (await bg.send({ type: 'getBlacklist' })).blacklist['google.com'];
+    assert.deepEqual(e.subDomains, ['search', 'maps']);
+    await bg.send({ type: 'adopt-entries', entries: { 'google.com': entry({ subDomains: [] }) } });
+    e = (await bg.send({ type: 'getBlacklist' })).blacklist['google.com'];
+    assert.deepEqual(e.subDomains, []);
+});
+
+test('adopt-entries reaktiviert freigegebene Seiten mit dem Paket', async () => {
+    const bg = loadBackground();
+    await avoid(bg, 'temu.com', { avoidLevels: [0, 0, 0, 0] });
+    await bg.send({ type: 'unavoid-site', avoidDomain: 'temu.com' });
+    await bg.send({ type: 'adopt-entries', entries: { 'temu.com': entry() } });
+    const e = (await bg.send({ type: 'getBlacklist' })).blacklist['temu.com'];
+    assert.equal(e.reminder, 'Paket');
+    assert.deepEqual(e.avoidLevels, [1, 1, 1, 1]);
+});
+
+test('adopt-entries ignoriert ungültige Domains und Alternativen', async () => {
+    const bg = loadBackground();
+    const ans = await bg.send({ type: 'adopt-entries', entries: {
+        'kein domain': entry(),
+        'ok.at': entry({ alternatives: [{ url: 'javascript:alert(1)', name: 'x' }, { url: 'https://gut.at/', name: 'gut.at' }],
+                         avoidLevels: [9, 'x', 2] })
+    } });
+    assert.deepEqual(ans.adopted, ['ok.at']);
+    const e = (await bg.send({ type: 'getBlacklist' })).blacklist['ok.at'];
+    assert.deepEqual(e.alternatives.map(a => a.url), ['https://gut.at/']);
+    assert.deepEqual(e.avoidLevels, [1, 1, 1, 1]);
+});
+
+test('delete-entry entfernt einen Eintrag ganz', async () => {
+    const bg = loadBackground();
+    await avoid(bg, 'temu.com');
+    await bg.send({ type: 'delete-entry', domain: 'temu.com' });
+    assert.equal((await bg.send({ type: 'getBlacklist' })).blacklist['temu.com'], undefined);
+});
+
+test('release-entries gibt Paket-Seiten frei, Teilbereiche anderer Pakete bleiben', async () => {
+    const bg = loadBackground();
+    await bg.send({ type: 'adopt-entries', entries: { 'temu.com': entry(), 'google.com': entry({ subDomains: ['search'] }) } });
+    await bg.send({ type: 'adopt-entries', entries: { 'google.com': entry({ subDomains: ['maps'] }) } });
+    await bg.send({ type: 'release-entries', entries: { 'temu.com': { subDomains: [] }, 'google.com': { subDomains: ['search'] } } });
+    const { blacklist } = await bg.send({ type: 'getBlacklist' });
+    assert.equal(blacklist['temu.com'].reminder, undefined);
+    assert.equal(blacklist['temu.com'].alternatives.length, 1);   // bleiben gemerkt
+    assert.equal(blacklist['google.com'].reminder, 'Paket');
+    assert.deepEqual(blacklist['google.com'].subDomains, ['maps']);
+    await bg.send({ type: 'release-entries', entries: { 'google.com': { subDomains: ['maps'] }, 'gibtsnicht.at': { subDomains: [] } } });
+    assert.equal((await bg.send({ type: 'getBlacklist' })).blacklist['google.com'].reminder, undefined);
+});
+
+test('Fehler im Background kommen als Fehlermeldung bei der Seite an', async () => {
+    const bg = loadBackground();
+    const ans = await bg.send({ type: 'actualize-AO' });
+    assert.match(ans?.error ?? '', /\w/);
+});

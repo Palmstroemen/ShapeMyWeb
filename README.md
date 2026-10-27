@@ -9,6 +9,12 @@ alternativen Webseiten, die du stattdessen besuchen möchtest.
 
 ## Funktionen
 
+- **Schnellstart-Pakete:** fertige Erinnerungen und Alternativen für Amazon, Temu,
+  YouTube, Google-Suche, Google Maps und soziale Netzwerke, mit einem Klick übernommen
+  (Einstellungen → Schnellstart).
+- **Verwaltung:** in den Einstellungen Seiten hinzufügen, Erinnerung, Störstärken und
+  Alternativen ändern, freigeben, löschen. Die ganze Liste lässt sich als Datei
+  exportieren und wieder importieren.
 - **Seite vermeiden:** im Popup auf das Stoppschild klicken oder in der
   Adresszeile `avoid`, Leertaste und Enter eingeben.
 - **Teilbereiche:** nur bestimmte Bereiche einer Seite sperren
@@ -20,8 +26,8 @@ alternativen Webseiten, die du stattdessen besuchen möchtest.
 - **Pause und Pass-by:** die Extension für einige Minuten pausieren oder eine
   Seite einmal durchlassen.
 - **Alternativen:** eigene Links mit kurzem Satz und Farbe.
-- **Zwei Designs:** das verspielte Stoppschild oder eine ruhige, schlichte Ansicht
-  (Einstellungen → Darstellung).
+- **Zwei Designs:** *Lustig*, das verspielte Stoppschild, oder *Professionell*, eine ruhige,
+  schlichte Ansicht (Einstellungen → Darstellung).
 
 Blacklist und Einstellungen werden über `storage.sync` zwischen deinen Geräten
 synchronisiert (Google- bzw. Firefox-Konto).
@@ -53,6 +59,7 @@ npm run test:e2e         # Smoke-Tests in Chromium und Firefox (ca. 1–2 Minute
 npm run lint             # Firefox-Linter (web-ext)
 npm run build            # ZIP für Chrome Web Store / addons.mozilla.org nach dist/
 npm run store-assets     # Store-Screenshots und Werbekachel nach docs/store/ (de, en)
+npm run check-links      # Sind alle Alternativen der Schnellstart-Pakete erreichbar? (vor jedem Release)
 ```
 
 Pfade zu den Browsern lassen sich mit `CHROME_PATH` und `FIREFOX_PATH` setzen.
@@ -63,6 +70,11 @@ Pfade zu den Browsern lassen sich mit `CHROME_PATH` und `FIREFOX_PATH` setzen.
   laden“ → Ordner `extension/` wählen.
 - **Firefox:** `npm run start:firefox`, oder `about:debugging` → „Dieser
   Firefox“ → „Temporäres Add-on laden“ → `extension/manifest.json`.
+
+Nach Änderungen am Code die Extension **neu laden** (↻ in `chrome://extensions`)
+und **alle offenen ShapeMyWeb-Tabs schließen** (Einstellungen, Stoppschild,
+Willkommensseite). Alte Tabs laufen sonst mit dem alten Code weiter und können
+nicht mehr mit der Extension sprechen: Schalter und Knöpfe reagieren dann scheinbar nicht.
 
 ### Hinweise zur Architektur
 

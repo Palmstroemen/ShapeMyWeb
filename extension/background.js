@@ -18,7 +18,7 @@ const blockPage       = chrome.runtime.getURL('showstopper.html');
 const blPrefix        = 'bl:';
 const passByTime      = 12 * 1000;   // So lange darf man nach "pass-by" auf der Seite bleiben.
 const level1Time      = 60 * 1000;   // Avoid-Level 1 warnt höchstens einmal pro Minute.
-const designs         = ['classic', 'calm'];   // Stoppschild bzw. ruhiges Design
+const designs         = ['classic', 'calm'];   // angezeigt als "Lustig" (Stoppschild) bzw. "Professionell"
 const defaultSynced   = { textOpacity: 0.7, showRole: [true, true, true, true],
                           justRiseAvoidLevels: false, noChangeToAvoidLevel0: false, design: 'classic' };
 const defaultLocal    = { pauseTime: 10 };
@@ -149,6 +149,26 @@ const handlers = {
 
     "getBlacklist": async () => {
         return { blacklist: await loadBlacklist() };
+    },
+
+    "adopt-entries": async (request) => {
+        // Pakete und Import: Einträge übernehmen, mit vorhandenen zusammenführen.
+        let adopted = [];
+        for (let [domain, entry] of Object.entries(request.entries ?? {})) {
+            if (await adoptEntry(domain, entry)) adopted.push(domain);
+        }
+        return { adopted: adopted };
+    },
+
+    "release-entries": async (request) => {
+        // Paket ausgeschaltet: seine Seiten bzw. Teilbereiche wieder freigeben.
+        for (let [domain, entry] of Object.entries(request.entries ?? {})) {
+            await releaseEntry(domain, entry.subDomains ?? []);
+        }
+    },
+
+    "delete-entry": async (request) => {
+        await chrome.storage.sync.remove(blPrefix + request.domain);
     }
 };
 
@@ -158,7 +178,7 @@ function onMessage(request, sender, respond) {
     if (!handler) return false;   // ist für eine andere Seite der Extension bestimmt
     handler(request, sender).then(respond, (error) => {
         console.error("BAC: Fehler bei", request.type, error);
-        respond(undefined);
+        respond({ error: String(error?.message ?? error) });   // die Seite zeigt den Fehler an
     });
     return true;   // Antwort kommt asynchron
 }
@@ -350,6 +370,65 @@ async function actualizeBlacklist(AO) {
         avoidLevels:  Array.isArray(AO.avoidLevels)  ? AO.avoidLevels  : [1, 1, 1, 1],
         alternatives: Array.isArray(AO.alternatives) ? AO.alternatives : []
     });
+}
+
+
+function isDomain(domain) {
+    return typeof domain === 'string' && /^[a-z0-9-]+(\.[a-z0-9-]+)+$/i.test(domain);
+}
+
+
+function cleanEntry(entry) {
+    // Eingaben aus Paketen und Importdateien nur in bekannter Form übernehmen.
+    let levels = Array.isArray(entry.avoidLevels) && entry.avoidLevels.length == 4
+              && entry.avoidLevels.every(l => [0, 1, 2, 3].includes(l)) ? entry.avoidLevels : [1, 1, 1, 1];
+    return {
+        reminder:     typeof entry.reminder === 'string' ? entry.reminder : undefined,
+        subDomains:   Array.isArray(entry.subDomains) ? entry.subDomains.filter(s => typeof s === 'string') : [],
+        avoidLevels:  levels,
+        alternatives: (Array.isArray(entry.alternatives) ? entry.alternatives : [])
+            .filter(a => a && isWebUrl(a.url))
+            .map(a => ({ url: a.url, name: String(a.name ?? splitUrl(a.url)[0]), claim: String(a.claim ?? ''),
+                         color: String(a.color ?? ''), icon: '', affilateLink: '' }))
+    };
+}
+
+
+async function adoptEntry(domain, entry) {
+    if (!isDomain(domain) || !entry) return false;
+    let incoming = cleanEntry(entry);
+    let existing = await getEntry(domain);
+    if (!existing) {
+        await saveEntry(domain, incoming);
+        return true;
+    }
+    let avoided = existing.reminder !== undefined;
+    let known   = new Set((existing.alternatives ?? []).map(a => a.url));
+    let subs    = existing.subDomains ?? [];
+    await saveEntry(domain, {
+        // Was der User selbst eingestellt hat, bleibt.
+        reminder:     avoided ? existing.reminder : incoming.reminder,
+        avoidLevels:  avoided ? existing.avoidLevels : incoming.avoidLevels,
+        // Leere Teilbereiche bedeuten "ganze Seite" und haben Vorrang.
+        subDomains:   (subs.length == 0 && avoided) || incoming.subDomains.length == 0 ? []
+                    : [...new Set([...subs, ...incoming.subDomains])],
+        alternatives: [...(existing.alternatives ?? []), ...incoming.alternatives.filter(a => !known.has(a.url))]
+    });
+    return true;
+}
+
+
+async function releaseEntry(domain, subDomains) {
+    // Nur die Teilbereiche des Pakets entfernen; bleibt nichts übrig, ist die Seite frei.
+    let entry = await getEntry(domain);
+    if (!entry) return;
+    let remaining = (entry.subDomains ?? []).filter(s => !subDomains.includes(s));
+    if (subDomains.length > 0 && remaining.length > 0) {
+        entry.subDomains = remaining;
+        await saveEntry(domain, entry);
+    } else {
+        await removeFromBlacklist(domain);
+    }
 }
 
 
