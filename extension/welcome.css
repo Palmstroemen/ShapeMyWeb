@@ -1,0 +1,155 @@
+/* Willkommensseite nach der Installation */
+:root {
+    color-scheme: light;
+    --sign-red: #e2231a;
+    --text: #222222;
+    --muted: #666666;
+    --info-color: #f2f2f2;
+    --enter-color: lightyellow;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    background: white;
+    color: var(--text);
+    font-family: sans-serif;
+    font-size: 17px;
+    line-height: 1.55;
+}
+
+main {
+    max-width: 680px;
+    margin: 0 auto;
+    padding: 40px 16px 56px;
+}
+
+header {
+    text-align: center;
+    margin-bottom: 40px;
+}
+
+h1 {
+    font-size: 2em;
+    margin: 16px 0 8px;
+}
+
+h2 {
+    font-size: 1.25em;
+    margin: 0 0 12px;
+}
+
+.intro {
+    color: var(--muted);
+    font-size: 1.1em;
+    margin: 0;
+}
+
+section {
+    background: var(--info-color);
+    border-radius: 12px;
+    padding: 20px 24px;
+    margin-bottom: 20px;
+}
+
+section p {
+    margin: 0 0 12px;
+}
+
+section p:last-child {
+    margin-bottom: 0;
+}
+
+.steps {
+    margin: 0 0 12px;
+    padding-left: 0;
+    list-style: none;
+    counter-reset: step;
+}
+
+.steps li {
+    position: relative;
+    padding-left: 44px;
+    margin-bottom: 12px;
+    counter-increment: step;
+}
+
+.steps li::before {
+    content: counter(step);
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: var(--sign-red);
+    color: white;
+    font-weight: bold;
+    text-align: center;
+    line-height: 28px;
+}
+
+.tip {
+    background: var(--enter-color);
+    border-radius: 8px;
+    padding: 10px 14px;
+}
+
+.levels {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.levels li {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 6px;
+}
+
+.levels img {
+    width: 24px;
+    height: 24px;
+    flex: none;
+}
+
+.status {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 12px;
+    font-weight: bold;
+}
+
+.status.allowed {
+    color: #1b7f3a;
+}
+
+.status.notAllowed {
+    color: var(--sign-red);
+}
+
+button {
+    font: inherit;
+    font-size: 0.9em;
+    font-weight: normal;
+    padding: 6px 14px;
+    border: 1px solid #bbbbbb;
+    border-radius: 6px;
+    background: white;
+    cursor: pointer;
+}
+
+button:hover {
+    background: #fff8db;
+}
+
+footer {
+    text-align: center;
+    color: var(--muted);
+    font-size: 0.95em;
+}

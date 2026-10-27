@@ -134,6 +134,10 @@ const handlers = {
         await chrome.tabs.create({ url: chrome.runtime.getURL('smw-setup.html') });
     },
 
+    "welcome": async () => {
+        await openWelcome();
+    },
+
     "saveSettings": async (request) => {
         await saveSettings(request.settings);
     },
@@ -160,9 +164,17 @@ function onMessage(request, sender, respond) {
 
 
 async function onInstalled(details) {
+    if (details.reason === 'install') {
+        await openWelcome();
+    }
     if (details.reason === 'update') {
         await migrateOldBlacklist();
     }
+}
+
+
+async function openWelcome() {
+    await chrome.tabs.create({ url: chrome.runtime.getURL('welcome.html') });
 }
 
 

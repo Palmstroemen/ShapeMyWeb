@@ -236,3 +236,23 @@ test('Omnibox "avoid" öffnet den Editmode für den aktuellen Tab', async () => 
     assert.equal(bg.tabs.updates[0].tabId, 1);
     assert.match(bg.tabs.updates[0].url, /&new=1$/);
 });
+
+// Onboarding ...............................................................
+
+test('Nach der Erstinstallation öffnet sich die Willkommensseite', async () => {
+    const bg = loadBackground();
+    await bg.chrome.runtime.onInstalled.listeners[0]({ reason: 'install' });
+    assert.deepEqual(bg.tabs.created, [extensionUrl + 'welcome.html']);
+});
+
+test('Ein Update öffnet keine Willkommensseite', async () => {
+    const bg = loadBackground();
+    await bg.chrome.runtime.onInstalled.listeners[0]({ reason: 'update' });
+    assert.deepEqual(bg.tabs.created, []);
+});
+
+test('Das Popup kann die Willkommensseite erneut öffnen', async () => {
+    const bg = loadBackground();
+    await bg.send({ type: 'welcome' });
+    assert.deepEqual(bg.tabs.created, [extensionUrl + 'welcome.html']);
+});
