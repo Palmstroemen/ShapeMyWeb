@@ -60,7 +60,9 @@ deines Browsers entfernen.
 ### Kontakt
 
 Fragen zum Datenschutz: [GitHub-Issues](https://github.com/Palmstroemen/ShapeMyWeb/issues)
-oder an <!-- TODO: Name und E-Mail-Adresse des Verantwortlichen eintragen -->[Name, E-Mail].
+oder per E-Mail.
+
+Verantwortlich: Oliver Rafelsberger, palmstroem177@gmail.com
 
 Änderungen dieser Erklärung sind in der
 [Versionsgeschichte](https://github.com/Palmstroemen/ShapeMyWeb/commits/main/docs/privacy.md)
@@ -123,7 +125,9 @@ removed via your browser's sync settings.
 ### Contact
 
 Privacy questions: [GitHub issues](https://github.com/Palmstroemen/ShapeMyWeb/issues)
-or <!-- TODO: controller name and e-mail -->[name, e-mail].
+or by e-mail.
+
+Controller: Oliver Rafelsberger, palmstroem177@gmail.com
 
 Changes to this policy are visible in the
 [version history](https://github.com/Palmstroemen/ShapeMyWeb/commits/main/docs/privacy.md).
