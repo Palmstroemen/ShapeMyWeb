@@ -4,8 +4,8 @@
 Priorität: 1 = hoch … 4 = niedrig.
 
 ## Allgemein
-- [ ] (1) Per Default auch im Inkognito-Modus aktiv
-- [ ] (1) Popup: „Sende Vorschläge an …“ (ganz unten)
+- [ ] (1) Per Default auch im Inkognito-Modus aktiv – geht technisch nicht ohne Zustimmung; Willkommensseite zeigt Status und erklärt die Freigabe
+- [x] (1) Popup: „Sende Vorschläge an …“ (ganz unten) – Link zu GitHub-Issues
 - [x] (2) jQuery ausbauen
 - [x] (2) Bootstrap ausbauen
 - [ ] (2) Kein Rollenwechsel auf der Showstopper-Seite
@@ -16,7 +16,7 @@ Priorität: 1 = hoch … 4 = niedrig.
 
 ## Neues Avoid-Objekt anlegen
 - [x] (1) Alternativen anlegen funktioniert nicht (`alternatives.push is not a function`)
-- [ ] (1) Seite schließen funktioniert nicht (darf nur von dem Script, das die Seite geöffnet hat, geschlossen werden)
+- [x] (1) Seite schließen funktioniert nicht (darf nur von dem Script, das die Seite geöffnet hat, geschlossen werden)
 - [ ] (1) OK / Cancel evtl. verschieben bzw. komplett ausbauen
 
 ## Settings
@@ -32,6 +32,7 @@ Priorität: 1 = hoch … 4 = niedrig.
 - [ ] (4) Iconset für Avoid-Levels austauschbar
 
 ## Userguide
+- [x] Willkommensseite nach der Installation (Erste Schritte, Rollen, Störstärken, Datenschutz)
 - [ ] (1) „1, 2, 3, …“ beim Editing
 - [ ] (2) Levels – ab 3 Webseiten
 - [ ] (2) Rollen – ab 5 Webseiten
@@ -53,4 +54,4 @@ Priorität: 1 = hoch … 4 = niedrig.
 - [ ] (3) Affiliate-Links (siehe [Konzept](docs/konzept-affiliate.md))
 - [ ] (3) Alternativen umsortieren
 - [ ] (4) Schönere Farbselektion (nur Hue)
-- [ ] (1) Warnmeldung „Not an URL“ übersetzen
+- [x] (1) Warnmeldung „Not an URL“ übersetzen

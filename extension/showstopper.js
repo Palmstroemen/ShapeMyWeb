@@ -404,6 +404,10 @@ console.log('SST: Alternatives:', alternatives[a]);
         }
     }
     alternativesArea.innerHTML = fillString;
+    for (let icon of alternativesArea.querySelectorAll('img.icon')) {
+        // Seiten ohne favicon.ico: kein kaputtes Bild anzeigen
+        icon.addEventListener('error', function () { icon.style.visibility = 'hidden'; });
+    }
     for (var a = 0; a < alternatives.length; a++) {
         if ((displayMode == "edit") || (editID == a)) {
             document.getElementById("removeAlternative"+a).addEventListener('click', removeAlternative);
@@ -472,7 +476,8 @@ console.log("SST: Color changed", id, inputColor);
 
 
 function iconFrom(domain) {
-    return "<img src='https://icons.duckduckgo.com/ip2/www." + escapeHtml(domain) + ".ico' class='icon'>";
+    // Das Icon kommt direkt von der Alternative selbst, nicht über einen Drittanbieter.
+    return "<img src='https://" + escapeHtml(domain) + "/favicon.ico' class='icon'>";
 }
 
 

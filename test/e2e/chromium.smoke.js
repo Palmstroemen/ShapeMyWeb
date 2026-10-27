@@ -36,13 +36,26 @@ function watch(page, name) {
     const browser = await puppeteer.launch({
         executablePath: chromePath,
         headless: true,
-        args: [`--disable-extensions-except=${extDir}`, `--load-extension=${extDir}`,
+        env: { ...process.env, LANGUAGE: 'de' },   // Platzhalter im HTML sind englisch
+        args: ['--lang=de', `--disable-extensions-except=${extDir}`, `--load-extension=${extDir}`,
                `--host-resolver-rules=MAP * 127.0.0.1:${port}`, '--no-sandbox'],
     });
     try {
         const swTarget = await browser.waitForTarget(t => t.type() === 'service_worker', { timeout: 10000 });
         const extUrl   = `chrome-extension://${new URL(swTarget.url()).host}/`;
         log('Service Worker läuft:', swTarget.url());
+
+        // 0. Willkommensseite nach der Installation
+        const welcomeTarget = await browser.waitForTarget(t => t.url() === extUrl + 'welcome.html', { timeout: 5000 }).catch(() => null);
+        check(welcomeTarget, 'Willkommensseite wurde nach der Installation nicht geöffnet');
+        const welcome = await welcomeTarget.page();
+        watch(welcome, 'welcome');
+        await welcome.reload();
+        await sleep(500);
+        const welcomeTitle = await welcome.$eval('h1', e => e.textContent);
+        log('Willkommensseite:', welcomeTitle);
+        check(welcomeTitle === 'Willkommen bei ShapeMyWeb!', 'Willkommensseite nicht übersetzt');
+        log('Inkognito-Status:', await welcome.$eval('#incognitoStatus', e => e.textContent));
 
         // Eine Extension-Seite dient als Fernbedienung für Messages an den Background.
         const remote = await browser.newPage();
@@ -69,6 +82,9 @@ function watch(page, name) {
         const alternatives = await page.$$eval('#alternativesArea a', as => as.map(a => a.href));
         log('Alternativen:', alternatives);
         check(alternatives[0] === 'http://orf.at/', 'Alternative fehlt');
+        const icon = await page.$eval('#alternativesArea img.icon', e => e.getAttribute('src'));
+        log('Icon der Alternative:', icon);
+        check(icon === 'https://orf.at/favicon.ico', 'Icon soll direkt von der Alternative kommen, nicht von einem Drittanbieter');
 
         // 2. Nicht gelistete Seite
         const free = await browser.newPage();
@@ -94,6 +110,7 @@ function watch(page, name) {
         await edit.type('#reminderEntrybox', 'Zu viel Zeit');
         await edit.click('#buttonConfirm');
         await sleep(800);
+        check(edit.isClosed(), 'Tab wurde nach dem Bestätigen nicht geschlossen');
         const saved = (await blacklist())['news.net'];
         log('Gespeichert news.net:', JSON.stringify(saved));
         check(saved?.reminder === 'Zu viel Zeit', 'Eintrag nicht gespeichert');
@@ -104,6 +121,13 @@ function watch(page, name) {
         await popup.goto(extUrl + 'popup.html');
         await sleep(1000);
         check(await popup.$('#buttonR0') !== null, 'Toolbar im Popup fehlt');
+        const contact = await popup.$eval('#contactLink', a => [a.href, a.target, a.textContent]).catch(() => null);
+        log('Kontakt-Link:', contact);
+        check(contact?.[0] === 'https://github.com/Palmstroemen/ShapeMyWeb/issues' && contact[1] === '_blank', 'Kontakt-Link fehlt');
+        const tabsBefore = (await browser.pages()).length;
+        await popup.click('#buttonHelp');
+        const helpTarget = await browser.waitForTarget(t => t.url() === extUrl + 'welcome.html' && t !== welcomeTarget, { timeout: 3000 }).catch(() => null);
+        check(helpTarget, 'Hilfe-Button öffnet die Willkommensseite nicht');
         await remote.reload();
         await sleep(500);
         const listed = await remote.$$eval('#domainlist li strong', l => l.map(e => e.textContent));

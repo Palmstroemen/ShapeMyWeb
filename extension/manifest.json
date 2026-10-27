@@ -3,7 +3,7 @@
     "name": "__MSG_extName__",
     "version": "0.3.0",
     "default_locale": "en",
-    "description": "Web Filter enables self-determined web filtering.",
+    "description": "__MSG_extDescription__",
     "omnibox": { "keyword": "avoid" },
 
     "icons": {

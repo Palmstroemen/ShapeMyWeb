@@ -47,6 +47,10 @@ function initDataFromAO(AO) {
 
 function initSetupButton() {
     document.getElementById('buttonSetup').addEventListener('click', function () { goToSetup(); });
+    document.getElementById('buttonHelp').addEventListener('click', function () {
+        chrome.runtime.sendMessage({ type: 'welcome' });
+        window.close();
+    });
 }
 
 function goToSetup() {

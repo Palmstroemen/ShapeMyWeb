@@ -50,7 +50,19 @@ const openExtensionPage = (page, file) => page.goto(extUrl + file, { timeout: 30
     });
     try {
         log('Installiert:', await browser.installExtension(extDir));
-        await sleep(1000);
+        await sleep(1500);
+
+        // 0. Willkommensseite nach der Installation
+        const pages = await browser.pages();
+        let welcome;
+        for (const p of pages) {
+            if ((await urlOf(p).catch(() => '')) === extUrl + 'welcome.html') welcome = p;
+        }
+        check(welcome, 'Willkommensseite wurde nach der Installation nicht geöffnet');
+        watch(welcome, 'welcome');
+        log('Willkommensseite:', await welcome.$eval('h1', e => e.textContent));
+        log('Inkognito-Status:', await welcome.$eval('#incognitoStatus', e => e.textContent));
+        check(await welcome.$eval('#buttonIncognito', b => b.hidden), 'Firefox darf keinen Einstellungen-Button zeigen');
 
         const remote = await browser.newPage();
         watch(remote, 'setup');
@@ -93,6 +105,10 @@ const openExtensionPage = (page, file) => page.goto(extUrl + file, { timeout: 30
         await edit.type('#reminderEntrybox', 'Zu viel Zeit');
         await edit.click('#buttonConfirm');
         await sleep(800);
+        // Puppeteer bemerkt in Firefox nicht, wenn sich ein privilegierter Tab schließt: daher über die Extension fragen.
+        const openTabs = await remote.evaluate(() => chrome.tabs.query({}).then(tabs => tabs.map(t => t.url)));
+        log('Offene Tabs:', openTabs.length, openTabs.filter(u => u.includes('news.net')));
+        check(!openTabs.some(u => u.includes('news.net')), 'Tab wurde nach dem Bestätigen nicht geschlossen');
         const saved = (await send({ type: 'getBlacklist' })).blacklist['news.net'];
         log('Gespeichert news.net:', JSON.stringify(saved));
         check(saved?.reminder === 'Zu viel Zeit', 'Eintrag nicht gespeichert');
