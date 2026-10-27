@@ -160,6 +160,13 @@ const handlers = {
         return { adopted: adopted };
     },
 
+    "release-entries": async (request) => {
+        // Paket ausgeschaltet: seine Seiten bzw. Teilbereiche wieder freigeben.
+        for (let [domain, entry] of Object.entries(request.entries ?? {})) {
+            await releaseEntry(domain, entry.subDomains ?? []);
+        }
+    },
+
     "delete-entry": async (request) => {
         await chrome.storage.sync.remove(blPrefix + request.domain);
     }
@@ -408,6 +415,20 @@ async function adoptEntry(domain, entry) {
         alternatives: [...(existing.alternatives ?? []), ...incoming.alternatives.filter(a => !known.has(a.url))]
     });
     return true;
+}
+
+
+async function releaseEntry(domain, subDomains) {
+    // Nur die Teilbereiche des Pakets entfernen; bleibt nichts übrig, ist die Seite frei.
+    let entry = await getEntry(domain);
+    if (!entry) return;
+    let remaining = (entry.subDomains ?? []).filter(s => !subDomains.includes(s));
+    if (subDomains.length > 0 && remaining.length > 0) {
+        entry.subDomains = remaining;
+        await saveEntry(domain, entry);
+    } else {
+        await removeFromBlacklist(domain);
+    }
 }
 
 

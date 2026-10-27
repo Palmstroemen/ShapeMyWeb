@@ -147,15 +147,54 @@ button.link {
     grid-column: 1 / -1;
 }
 
-.packageHead {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 10px;
+.package.adopted {
+    border-color: var(--ok);
 }
 
-.packageView {
-    white-space: nowrap;
+.packageSwitch {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+}
+
+/* Schalter statt Checkbox */
+.packageToggle {
+    appearance: none;
+    position: relative;
+    flex: none;
+    width: 40px;
+    height: 22px;
+    margin: 0;
+    border-radius: 11px;
+    background: #c8c8c8;
+    cursor: pointer;
+    transition: background 0.15s;
+}
+
+.packageToggle::after {
+    content: "";
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: white;
+    transition: left 0.15s;
+}
+
+.packageToggle:checked {
+    background: var(--ok);
+}
+
+.packageToggle:checked::after {
+    left: 21px;
+}
+
+.packageToggle:focus-visible {
+    outline: 2px solid var(--text);
+    outline-offset: 2px;
 }
 
 .packageTitle {
@@ -163,13 +202,29 @@ button.link {
 }
 
 .packageInfo {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 4px 0 0 50px;
     color: var(--muted);
     font-size: 0.9em;
 }
 
-.package.adopted .packageView::before {
-    content: "✓ ";
-    color: var(--ok);
+.savedNotice {
+    position: fixed;
+    right: 20px;
+    bottom: 20px;
+    padding: 8px 14px;
+    border-radius: 8px;
+    background: var(--ok);
+    color: white;
+    opacity: 0;
+    transition: opacity 0.2s;
+    pointer-events: none;
+}
+
+.savedNotice.visible {
+    opacity: 1;
 }
 
 .packagePreview {

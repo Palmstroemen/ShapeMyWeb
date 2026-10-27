@@ -221,20 +221,55 @@ function watch(page, name) {
         const packageIds = await remote.$$eval('.package', l => l.map(e => e.dataset.package));
         log('Pakete:', packageIds);
         check(packageIds.length === 6 && packageIds.includes('temu'), 'Pakete fehlen auf der Einstellungsseite');
-        await clickAt(remote, '[data-package="temu"] .packageView');
+        const toggle = '[data-package="temu"] input.packageToggle';
+        check(!(await remote.$eval(toggle, e => e.checked)), 'Temu-Paket ist schon an');
+        await clickAt(remote, '[data-package="temu"] .packageDetails');
         await sleep(300);
         const choices = await remote.$$eval('[data-package="temu"] input.packageAlt', l => l.map(e => [e.value, e.checked]));
         log('Temu, Vorauswahl:', JSON.stringify(choices));
-        check(choices.length === 4 && choices.every(c => c[1]), 'Vorschau des Temu-Pakets falsch (Sprache de: alle vorausgewählt)');
+        check(choices.length === 4 && choices.every(c => c[1]), 'Vorauswahl des Temu-Pakets falsch (Sprache de: alle)');
         await clickAt(remote, '[data-package="temu"] input.packageAlt[value="https://www.genialokal.de/"]');
-        await clickAt(remote, '[data-package="temu"] .packageApply');
-        await sleep(500);
-        const temu = await entryOf('temu.com');
-        log('Temu übernommen:', JSON.stringify(temu));
+        await sleep(300);
+        check((await entryOf('temu.com')) === undefined, 'Paket ist aus, darf noch nichts speichern');
+        await clickAt(remote, toggle);
+        await sleep(600);
+        let temu = await entryOf('temu.com');
+        log('Temu eingeschaltet:', temu?.reminder, temu?.alternatives.map(a => a.name));
         check(temu?.reminder === 'Billig kostet am Ende mehr.' && temu.avoidLevels.join() === '1,1,1,1'
               && temu.alternatives.length === 3 && !temu.alternatives.some(a => a.url.includes('genialokal')),
-              'Temu-Paket falsch übernommen');
-        check(await remote.$eval('[data-package="temu"]', e => e.classList.contains('adopted')), 'Paket nicht als übernommen markiert');
+              'Temu-Paket falsch gespeichert');
+        check(await remote.$eval('#savedNotice', e => e.classList.contains('visible')), 'Keine Bestätigung "Gespeichert"');
+
+        // Beim nächsten Aufruf ist der Schalter noch an
+        await remote.reload();
+        await sleep(800);
+        check(await remote.$eval(toggle, e => e.checked), 'Paket nach dem Neuladen nicht mehr aktiv');
+        await clickAt(remote, '[data-package="temu"] .packageDetails');
+        await sleep(300);
+        check(!(await remote.$eval('[data-package="temu"] input.packageAlt[value="https://www.genialokal.de/"]', e => e.checked)),
+              'Häkchen zeigen nicht den gespeicherten Stand');
+        await clickAt(remote, '[data-package="temu"] input.packageAlt[value="https://www.genialokal.de/"]');
+        await sleep(600);
+        check((await entryOf('temu.com')).alternatives.length === 4, 'Häkchen bei aktivem Paket nicht gespeichert');
+        await setValue('[data-package="temu"] .packageReminder', 'Wirklich billig?');
+        await sleep(600);
+        check((await entryOf('temu.com')).reminder === 'Wirklich billig?', 'Erinnerung bei aktivem Paket nicht gespeichert');
+
+        // Ausschalten gibt die Seite frei, Google-Suche und Maps teilen sich google.com
+        await clickAt(remote, toggle);
+        await sleep(600);
+        check((await entryOf('temu.com')).reminder === undefined, 'Ausschalten gibt die Seite nicht frei');
+        await clickAt(remote, '[data-package="google-search"] input.packageToggle');
+        await clickAt(remote, '[data-package="google-maps"] input.packageToggle');
+        await sleep(800);
+        check((await entryOf('google.com')).subDomains.join() === 'search,maps', 'Google-Pakete nicht zusammengeführt');
+        await clickAt(remote, '[data-package="google-search"] input.packageToggle');
+        await sleep(600);
+        const google = await entryOf('google.com');
+        log('Google nach Ausschalten der Suche:', google.reminder, google.subDomains);
+        check(google.reminder !== undefined && google.subDomains.join() === 'maps', 'Maps soll gesperrt bleiben');
+        check(await remote.$eval('[data-package="google-maps"] input.packageToggle', e => e.checked)
+              && !(await remote.$eval('[data-package="google-search"] input.packageToggle', e => e.checked)), 'Schalter falsch');
 
         await setValue('#newDomain', 'kein domain');
         await clickAt(remote, '#addEntry');

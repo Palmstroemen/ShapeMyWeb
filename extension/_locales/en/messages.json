@@ -90,13 +90,9 @@
 "S010": { "message": "Quick start" },
 "S011": { "message": "Ready-made packs for big websites: reminder and alternatives in one click." },
 "S012": { "message": "Instead of" },
-"S013": { "message": "View" },
-"S014": { "message": "Apply" },
-"S015": { "message": "Cancel" },
-"S016": { "message": "Added" },
 "S017": { "message": "alternatives" },
 "S018": { "message": "Reminder" },
-"S019": { "message": "Added with avoid level 1: remind at most once a minute." },
+"S019": { "message": "Packs that are switched on use avoid level 1: remind at most once a minute. Switching off releases the websites again." },
 "S020": { "message": "Avoid a website" },
 "S021": { "message": "Website, e.g. temu.com" },
 "S022": { "message": "Why? Your reminder" },
@@ -121,5 +117,8 @@
 "S042": { "message": "only" },
 "W060": { "message": "Ready-made packs for Amazon, Temu, YouTube and more are in the settings." },
 "W061": { "message": "View packs" },
+"S043": { "message": "Changes are saved immediately." },
+"S044": { "message": "Saved" },
+"S045": { "message": "Details" },
 "end": { "message": "end"}
 }

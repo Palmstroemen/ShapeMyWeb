@@ -345,3 +345,17 @@ test('delete-entry entfernt einen Eintrag ganz', async () => {
     await bg.send({ type: 'delete-entry', domain: 'temu.com' });
     assert.equal((await bg.send({ type: 'getBlacklist' })).blacklist['temu.com'], undefined);
 });
+
+test('release-entries gibt Paket-Seiten frei, Teilbereiche anderer Pakete bleiben', async () => {
+    const bg = loadBackground();
+    await bg.send({ type: 'adopt-entries', entries: { 'temu.com': entry(), 'google.com': entry({ subDomains: ['search'] }) } });
+    await bg.send({ type: 'adopt-entries', entries: { 'google.com': entry({ subDomains: ['maps'] }) } });
+    await bg.send({ type: 'release-entries', entries: { 'temu.com': { subDomains: [] }, 'google.com': { subDomains: ['search'] } } });
+    const { blacklist } = await bg.send({ type: 'getBlacklist' });
+    assert.equal(blacklist['temu.com'].reminder, undefined);
+    assert.equal(blacklist['temu.com'].alternatives.length, 1);   // bleiben gemerkt
+    assert.equal(blacklist['google.com'].reminder, 'Paket');
+    assert.deepEqual(blacklist['google.com'].subDomains, ['maps']);
+    await bg.send({ type: 'release-entries', entries: { 'google.com': { subDomains: ['maps'] }, 'gibtsnicht.at': { subDomains: [] } } });
+    assert.equal((await bg.send({ type: 'getBlacklist' })).blacklist['google.com'].reminder, undefined);
+});

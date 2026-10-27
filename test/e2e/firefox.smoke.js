@@ -144,9 +144,7 @@ const openExtensionPage = (page, file) => page.goto(extUrl + file, { timeout: 30
         check(listed.includes('example.com') && listed.includes('news.net'), 'Setup-Liste unvollständig');
 
         // Schnellstart-Paket übernehmen
-        await remote.evaluate(() => document.querySelector('[data-package="youtube"] .packageView').click());
-        await sleep(300);
-        await remote.evaluate(() => document.querySelector('[data-package="youtube"] .packageApply').click());
+        await remote.evaluate(() => document.querySelector('[data-package="youtube"] input.packageToggle').click());
         await sleep(800);
         const youtube = (await send({ type: 'getBlacklist' })).blacklist['youtube.com'];
         log('YouTube-Paket:', youtube?.reminder, youtube?.alternatives.map(a => a.name));

@@ -90,13 +90,9 @@
 "S010": { "message": "Avvio rapido" },
 "S011": { "message": "Pacchetti pronti per i grandi siti: promemoria e alternative con un clic." },
 "S012": { "message": "Invece di" },
-"S013": { "message": "Vedi" },
-"S014": { "message": "Applica" },
-"S015": { "message": "Annulla" },
-"S016": { "message": "Aggiunto" },
 "S017": { "message": "alternative" },
 "S018": { "message": "Promemoria" },
-"S019": { "message": "Aggiunto con livello 1: ricorda al massimo una volta al minuto." },
+"S019": { "message": "I pacchetti attivi usano il livello 1: al massimo un promemoria al minuto. Disattivandoli i siti vengono liberati." },
 "S020": { "message": "Evita un sito" },
 "S021": { "message": "Sito, ad es. temu.com" },
 "S022": { "message": "Perché? Il tuo promemoria" },
@@ -121,5 +117,8 @@
 "S042": { "message": "solo" },
 "W060": { "message": "Pacchetti pronti per Amazon, Temu, YouTube e altri sono nelle impostazioni." },
 "W061": { "message": "Vedi i pacchetti" },
+"S043": { "message": "Le modifiche vengono salvate subito." },
+"S044": { "message": "Salvato" },
+"S045": { "message": "Dettagli" },
 "end": { "message": "fine"}
 }

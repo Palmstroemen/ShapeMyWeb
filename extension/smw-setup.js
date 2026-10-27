@@ -58,13 +58,14 @@ function initDesignSetup(settings) {
     for (let radio of document.querySelectorAll('input[name="design"]')) {
         radio.addEventListener('change', function () {
             settings.design = this.value;
-            send({ type: "saveSettings", settings: settings });
+            send({ type: "saveSettings", settings: settings }).then(showSaved);
         });
     }
 }
 
 
 // Schnellstart-Pakete ...................................................
+// Jedes Paket hat einen Schalter. Alles wird sofort gespeichert, es gibt keine Bestätigungstaste.
 
 function covers(entry, subDomains) {
     // Deckt ein gespeicherter Eintrag die Teilbereiche eines Pakets ab? Leer = ganze Seite.
@@ -74,13 +75,29 @@ function covers(entry, subDomains) {
 }
 
 
+function isActive(pkg) {
+    return pkg.domains.every(d => covers(blacklist[d.domain], d.subDomains));
+}
+
+
+function storedAlternatives(pkg) {
+    // Welche Alternativen des Pakets sind gespeichert? (am ersten Eintrag gemessen)
+    let entry = blacklist[pkg.domains[0].domain];
+    return new Set((entry?.alternatives ?? []).map(a => a.url));
+}
+
+
 function updatePackageStates() {
     for (let pkg of PACKAGES) {
         let card = document.querySelector('[data-package="' + pkg.id + '"]');
         if (!card) continue;
-        let adopted = pkg.domains.every(d => covers(blacklist[d.domain], d.subDomains));
-        card.classList.toggle('adopted', adopted);
-        card.querySelector('.packageView').textContent = msg(adopted ? 'S016' : 'S013');
+        let active = isActive(pkg);
+        card.classList.toggle('adopted', active);
+        card.querySelector('.packageToggle').checked = active;
+        if (active) {
+            let stored = storedAlternatives(pkg);
+            for (let box of card.querySelectorAll('input.packageAlt')) box.checked = stored.has(box.value);
+        }
     }
 }
 
@@ -94,63 +111,116 @@ function packageCard(pkg) {
     let card    = el('div', { class: 'package', dataset: { package: pkg.id } });
     let preview = el('div', { class: 'packagePreview', hidden: true });
     card.append(
-        el('div', { class: 'packageHead' },
-            el('div', {},
-                el('div', { class: 'packageTitle', textContent: msg('S012') + ' ' + localized(pkg.title, lang) }),
-                el('div', { class: 'packageInfo', textContent: pkg.alternatives.length + ' ' + msg('S017') })),
-            el('button', { type: 'button', class: 'packageView', textContent: msg('S013'),
-                           onclick: () => togglePreview(pkg, card, preview) })),
+        el('label', { class: 'packageSwitch' },
+            el('input', { type: 'checkbox', class: 'packageToggle', onchange: () => togglePackage(pkg, card) }),
+            el('span', { class: 'packageTitle', textContent: msg('S012') + ' ' + localized(pkg.title, lang) })),
+        el('div', { class: 'packageInfo' },
+            el('span', { textContent: pkg.alternatives.length + ' ' + msg('S017') }),
+            el('button', { type: 'button', class: 'link packageDetails', textContent: msg('S045'),
+                           onclick: () => toggleDetails(pkg, card, preview) })),
         preview);
     return card;
 }
 
 
-function closePreview(card, preview) {
-    preview.hidden = true;
-    card.classList.remove('open');
-}
-
-
-function togglePreview(pkg, card, preview) {
-    if (!preview.hidden) return closePreview(card, preview);
+function toggleDetails(pkg, card, preview) {
+    if (!preview.hidden) {
+        preview.hidden = true;
+        card.classList.remove('open');
+        return;
+    }
+    let active   = isActive(pkg);
+    let stored   = storedAlternatives(pkg);
     let regions  = regionsFor(navigator.languages);
-    let reminder = el('input', { type: 'text', class: 'packageReminder', value: localized(pkg.reminder, lang) });
+    let current  = active ? blacklist[pkg.domains[0].domain].reminder : localized(pkg.reminder, lang);
     let domains  = pkg.domains.map(d => d.domain + (d.subDomains.length ? ' (' + msg('S042') + ' /' + d.subDomains.join(', /') + ')' : ''));
     preview.replaceChildren(
         el('p', { class: 'small muted', textContent: domains.join(', ') }),
         el('div', { class: 'small muted', textContent: msg('S018') }),
-        reminder,
+        el('input', { type: 'text', class: 'packageReminder', value: current,
+                      onchange: function () { changeReminder(pkg, this.value); } }),
         ...pkg.alternatives.map(a => el('label', {},
-            el('input', { type: 'checkbox', class: 'packageAlt', value: a.url, checked: preselected(a, regions) }),
+            el('input', { type: 'checkbox', class: 'packageAlt', value: a.url,
+                          checked: active ? stored.has(a.url) : preselected(a, regions),
+                          onchange: function () { changeAlternative(pkg, a, this.checked); } }),
             el('span', {},
                 el('span', { class: 'altName', textContent: a.name }), ' – ',
-                el('span', { class: 'altClaim', textContent: localized(a.claim, lang) })))),
-        el('div', { class: 'row' },
-            el('button', { type: 'button', class: 'primary packageApply', textContent: msg('S014'),
-                           onclick: () => adoptPackage(pkg, reminder.value, card, preview) }),
-            el('button', { type: 'button', class: 'link', textContent: msg('S015'),
-                           onclick: () => closePreview(card, preview) })));
+                el('span', { class: 'altClaim', textContent: localized(a.claim, lang) })))));
     preview.hidden = false;
     card.classList.add('open');
 }
 
 
-async function adoptPackage(pkg, reminder, card, preview) {
-    let chosen = new Set([...preview.querySelectorAll('input.packageAlt:checked')].map(input => input.value));
-    let alternatives = pkg.alternatives.filter(a => chosen.has(a.url))
-        .map(a => ({ url: a.url, name: a.name, claim: localized(a.claim, lang), color: altColor(a.url) }));
-    let entries = {};
-    for (let d of pkg.domains) {
-        entries[d.domain] = {
-            reminder:     reminder.trim() || localized(pkg.reminder, lang),
-            subDomains:   d.subDomains,
-            avoidLevels:  [1, 1, 1, 1],   // höchstens einmal pro Minute erinnern
-            alternatives: alternatives
-        };
+function packageAlternative(a) {
+    return { url: a.url, name: a.name, claim: localized(a.claim, lang), color: altColor(a.url) };
+}
+
+
+function chosenAlternatives(pkg, card) {
+    // Sind die Details offen, gelten die Häkchen, sonst die Vorauswahl nach Region.
+    let boxes = card.querySelectorAll('input.packageAlt');
+    if (boxes.length) {
+        let chosen = new Set([...boxes].filter(box => box.checked).map(box => box.value));
+        return pkg.alternatives.filter(a => chosen.has(a.url));
     }
-    await send({ type: 'adopt-entries', entries: entries });
-    closePreview(card, preview);
+    let regions = regionsFor(navigator.languages);
+    return pkg.alternatives.filter(a => preselected(a, regions));
+}
+
+
+async function togglePackage(pkg, card) {
+    if (card.querySelector('.packageToggle').checked) {
+        let reminder = card.querySelector('.packageReminder')?.value.trim() || localized(pkg.reminder, lang);
+        let entries  = {};
+        for (let d of pkg.domains) {
+            entries[d.domain] = {
+                reminder:     reminder,
+                subDomains:   d.subDomains,
+                avoidLevels:  [1, 1, 1, 1],   // höchstens einmal pro Minute erinnern
+                alternatives: chosenAlternatives(pkg, card).map(packageAlternative)
+            };
+        }
+        await send({ type: 'adopt-entries', entries: entries });
+    } else {
+        let entries = {};
+        for (let d of pkg.domains) entries[d.domain] = { subDomains: d.subDomains };
+        await send({ type: 'release-entries', entries: entries });
+    }
     await refresh();
+    showSaved();
+}
+
+
+async function changeAlternative(pkg, alternative, checked) {
+    if (!isActive(pkg)) return;   // ausgeschaltet: nur Auswahl für später
+    for (let d of pkg.domains) {
+        let entry = blacklist[d.domain];
+        let alternatives = (entry.alternatives ?? []).filter(a => a.url != alternative.url);
+        if (checked) alternatives.push(packageAlternative(alternative));
+        await send({ type: 'actualize-AO', avoid: { ...entry, alternatives: alternatives, domain: d.domain } });
+    }
+    await refresh();
+    showSaved();
+}
+
+
+async function changeReminder(pkg, text) {
+    if (!isActive(pkg) || !text.trim()) return;
+    for (let d of pkg.domains) {
+        await send({ type: 'actualize-AO', avoid: { ...blacklist[d.domain], reminder: text.trim(), domain: d.domain } });
+    }
+    await refresh();
+    showSaved();
+}
+
+
+let savedTimer;
+
+function showSaved() {
+    let notice = document.getElementById('savedNotice');
+    notice.classList.add('visible');
+    clearTimeout(savedTimer);
+    savedTimer = setTimeout(() => notice.classList.remove('visible'), 1800);
 }
 
 
@@ -170,6 +240,7 @@ function renderBlacklist() {
 async function saveEntry(domain, entry) {
     await send({ type: 'actualize-AO', avoid: { ...entry, domain: domain } });
     await refresh();
+    showSaved();
 }
 
 
@@ -186,7 +257,7 @@ function entryCard(domain, entry) {
     let actions = el('div', { class: 'entryActions' },
         avoided
             ? el('button', { type: 'button', class: 'link entryUnavoid', textContent: msg('S025'),
-                             onclick: async () => { await send({ type: 'unavoid-site', avoidDomain: domain }); await refresh(); } })
+                             onclick: async () => { await send({ type: 'unavoid-site', avoidDomain: domain }); await refresh(); showSaved(); } })
             : el('button', { type: 'button', class: 'link entryReavoid', textContent: msg('S026'),
                              onclick: () => save({ reminder: reminderInput.value.trim() || msg('S041') }) }),
         el('button', { type: 'button', class: 'link entryDelete', textContent: msg('S027'),
@@ -194,6 +265,7 @@ function entryCard(domain, entry) {
                            if (!confirm(msg('S040'))) return;
                            await send({ type: 'delete-entry', domain: domain });
                            await refresh();
+                           showSaved();
                        } }));
 
     let meta = el('div', { class: 'entryMeta' }, el('span', { textContent: msg('S028') + ':' }),
@@ -242,6 +314,7 @@ async function addEntry(event) {
     domainInput.value = '';
     reminderInput.value = '';
     await refresh();
+    showSaved();
 }
 
 

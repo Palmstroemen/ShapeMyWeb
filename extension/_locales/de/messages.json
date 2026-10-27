@@ -90,13 +90,9 @@
 "S010": { "message": "Schnellstart" },
 "S011": { "message": "Fertige Pakete für große Webseiten: Erinnerung und Alternativen mit einem Klick." },
 "S012": { "message": "Statt" },
-"S013": { "message": "Ansehen" },
-"S014": { "message": "Übernehmen" },
-"S015": { "message": "Abbrechen" },
-"S016": { "message": "Übernommen" },
 "S017": { "message": "Alternativen" },
 "S018": { "message": "Erinnerung" },
-"S019": { "message": "Wird mit Störstärke 1 übernommen: höchstens einmal pro Minute erinnern." },
+"S019": { "message": "Eingeschaltete Pakete erinnern mit Störstärke 1: höchstens einmal pro Minute. Ausschalten gibt die Seiten wieder frei." },
 "S020": { "message": "Webseite vermeiden" },
 "S021": { "message": "Webseite, z. B. temu.com" },
 "S022": { "message": "Warum? Deine Erinnerung" },
@@ -121,5 +117,8 @@
 "S042": { "message": "nur" },
 "W060": { "message": "Fertige Pakete für Amazon, Temu, YouTube und mehr findest du in den Einstellungen." },
 "W061": { "message": "Pakete ansehen" },
+"S043": { "message": "Änderungen werden sofort gespeichert." },
+"S044": { "message": "Gespeichert" },
+"S045": { "message": "Details" },
 "end": { "message": "ende"}
 }
