@@ -18,7 +18,7 @@ const blockPage       = chrome.runtime.getURL('showstopper.html');
 const blPrefix        = 'bl:';
 const passByTime      = 12 * 1000;   // So lange darf man nach "pass-by" auf der Seite bleiben.
 const level1Time      = 60 * 1000;   // Avoid-Level 1 warnt höchstens einmal pro Minute.
-const designs         = ['classic', 'calm'];   // Stoppschild bzw. ruhiges Design
+const designs         = ['classic', 'calm'];   // angezeigt als "Funny" (Stoppschild) bzw. "Professional"
 const defaultSynced   = { textOpacity: 0.7, showRole: [true, true, true, true],
                           justRiseAvoidLevels: false, noChangeToAvoidLevel0: false, design: 'classic' };
 const defaultLocal    = { pauseTime: 10 };

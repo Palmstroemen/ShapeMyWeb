@@ -26,7 +26,7 @@ test('keine Datei enthält doppelte Schlüssel', () => {
 
 test('übersetzte Texte sind nicht einfach englisch geblieben', () => {
     // Texte, die in jeder Sprache gleich sein dürfen
-    const sameEverywhere = new Set(['extName', 'L013', 'L029', 'end']);
+    const sameEverywhere = new Set(['extName', 'L013', 'L029', 'end', 'D011', 'D012']);   // D011/D012: Namen der Designs
     for (const lang of languages.filter(l => l !== 'en')) {
         const untranslated = Object.keys(messages.en).filter(key =>
             !sameEverywhere.has(key) && messages[lang][key]?.message === messages.en[key].message);
