@@ -71,6 +71,11 @@ Pfade zu den Browsern lassen sich mit `CHROME_PATH` und `FIREFOX_PATH` setzen.
 - **Firefox:** `npm run start:firefox`, oder `about:debugging` → „Dieser
   Firefox“ → „Temporäres Add-on laden“ → `extension/manifest.json`.
 
+Nach Änderungen am Code die Extension **neu laden** (↻ in `chrome://extensions`)
+und **alle offenen ShapeMyWeb-Tabs schließen** (Einstellungen, Stoppschild,
+Willkommensseite). Alte Tabs laufen sonst mit dem alten Code weiter und können
+nicht mehr mit der Extension sprechen: Schalter und Knöpfe reagieren dann scheinbar nicht.
+
 ### Hinweise zur Architektur
 
 Unter Manifest V3 kann der Browser den Hintergrundprozess jederzeit beenden.
